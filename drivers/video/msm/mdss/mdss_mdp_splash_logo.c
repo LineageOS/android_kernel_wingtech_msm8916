@@ -456,8 +456,13 @@ static int mdss_mdp_display_splash_image(struct msm_fb_data_type *mfd)
 	src_rect.y = 0;
 	dest_rect.w = src_rect.w = SPLASH_IMAGE_WIDTH;
 	dest_rect.h = src_rect.h = SPLASH_IMAGE_HEIGHT;
+#ifdef CONFIG_MACH_WT88047
+	dest_rect.x = (fbi->var.xres) - (SPLASH_IMAGE_WIDTH);
+	dest_rect.y = 0;
+#else
 	dest_rect.x = (fbi->var.xres >> 1) - (SPLASH_IMAGE_WIDTH >> 1);
 	dest_rect.y = (fbi->var.yres >> 1) - (SPLASH_IMAGE_HEIGHT >> 1);
+#endif
 
 	rc = mdss_mdp_splash_alloc_memory(mfd, image_len);
 	if (rc) {
