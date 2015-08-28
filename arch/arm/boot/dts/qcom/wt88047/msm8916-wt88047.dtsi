@@ -175,34 +175,50 @@
 
 &dsi_r69431_720p_video {
 	qcom,cont-splash-enabled;
+	qcom,mdss-dsi-lp11-init;
+	qcom,mdss-dsi-init-delay-us = <200>;
 };
 
 &dsi_nt35521_720p_video {
 	qcom,cont-splash-enabled;
+	qcom,mdss-dsi-lp11-init;
+	qcom,mdss-dsi-init-delay-us = <200>;
 };
 
 &dsi_nt35521s_720p_video {
 	qcom,cont-splash-enabled;
+	qcom,mdss-dsi-lp11-init;
+	qcom,mdss-dsi-init-delay-us = <200>;
 };
 
 &dsi_nt35521_ofilm_720p_video {
 	qcom,cont-splash-enabled;
+	qcom,mdss-dsi-lp11-init;
+	qcom,mdss-dsi-init-delay-us = <200>;
 };
 
 &dsi_otm1285a_720p_video {
 	qcom,cont-splash-enabled;
+	qcom,mdss-dsi-lp11-init;
+	qcom,mdss-dsi-init-delay-us = <200>;
 };
 
 &dsi_r61308_720p_video {
 	qcom,cont-splash-enabled;
+	qcom,mdss-dsi-lp11-init;
+	qcom,mdss-dsi-init-delay-us = <200>;
 };
 
 &dsi_otm1285a_otp_720p_video {
 	qcom,cont-splash-enabled;
+	qcom,mdss-dsi-lp11-init;
+	qcom,mdss-dsi-init-delay-us = <200>;
 };
 
 &dsi_r61308_s88047a1_720p_video {
 	qcom,cont-splash-enabled;
+	qcom,mdss-dsi-lp11-init;
+	qcom,mdss-dsi-init-delay-us = <200>;
 };
 
 &tlmm_pinmux {
