@@ -20,6 +20,11 @@
 #include <media/msm_cam_sensor.h>
 #include <soc/qcom/camera2.h>
 #include "msm_sd.h"
+/*Added by Jinshui.Liu@Camera 20140221 start for cci error*/
+#ifdef CONFIG_MACH_WT88047
+#include <linux/wakelock.h>
+#endif
+/*Added by Jinshui.Liu@Camera 20140221 end*/
 
 #define NUM_MASTERS 2
 #define NUM_QUEUES 2
@@ -143,6 +148,11 @@ struct cci_device {
 	uint8_t master_clk_init[MASTER_MAX];
 	struct msm_pinctrl_info cci_pinctrl;
 	uint8_t cci_pinctrl_status;
+/*Added by Jinshui.Liu@Camera 20140221 start for cci error*/
+#ifdef CONFIG_MACH_WT88047
+	struct wake_lock cci_wakelock;
+#endif
+/*Added by Jinshui.Liu@Camera 20140221 end*/
 };
 
 enum msm_cci_i2c_cmd_type {
