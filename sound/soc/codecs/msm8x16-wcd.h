@@ -56,6 +56,12 @@
 #define DEFAULT_GAIN 9
 #define DEFAULT_OFFSET 100
 
+#ifdef CONFIG_MACH_WT88047
+#define EXT_SPK_AMP_GPIO (902 + 118)
+#define EXT_SPK_AMP_GPIO_1 (902 + 117)
+#define EXT_SPK_AMP_HEADSET_GPIO (902 + 8)
+#endif
+
 extern const u8 msm8x16_wcd_reg_readable[MSM8X16_WCD_CACHE_SIZE];
 extern const u8 msm8x16_wcd_reg_readonly[MSM8X16_WCD_CACHE_SIZE];
 extern const u8 msm8x16_wcd_reset_reg_defaults[MSM8X16_WCD_CACHE_SIZE];
