@@ -182,9 +182,11 @@ void migrate_irqs(void)
 		affinity_broken = migrate_one_irq(desc);
 		raw_spin_unlock(&desc->lock);
 
+#ifndef CONFIG_MACH_WT88047
 		if (affinity_broken && printk_ratelimit())
 			pr_warning("IRQ%u no longer affine to CPU%u\n", i,
 				smp_processor_id());
+#endif
 	}
 
 	local_irq_restore(flags);
