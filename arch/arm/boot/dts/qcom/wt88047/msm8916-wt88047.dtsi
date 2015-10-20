@@ -34,20 +34,8 @@
                         status = "disabled";
                 };
 
-                modem_adsp_region@0 {
-                        reg = <0x0 0x86800000 0x0 0x05400000>;
-                };
-
-                pheripheral_region@0 {
-                        reg = <0x0 0x8bc00000 0x0 0x0600000>;
-                };
-
                 secure_region@0 {
                         status = "disabled";
-                };
-
-                venus_qseecom_region@0 {
-                        reg = <0 0 0 0x600000>;
                 };
         };
 };
