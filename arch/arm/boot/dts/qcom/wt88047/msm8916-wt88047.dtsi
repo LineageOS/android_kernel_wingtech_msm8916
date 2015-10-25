@@ -243,6 +243,10 @@
 		liteon,ps-pulses = <4>;
 		liteon,wakeup-threshold = <4>;
 		liteon,als-integration-time = <0>;
+		liteon,als-equation-0 = <1 1 7743 1059 600 1>;
+		liteon,als-equation-1 = <4 1 2785 696 240 (-1)>;
+		liteon,als-equation-2 = <0 0 5926 1300 44 1>;
+		liteon,als-equation-3 = <0 0 0 0 1 1>;
 	};
 
 	mpu6050@68 {
