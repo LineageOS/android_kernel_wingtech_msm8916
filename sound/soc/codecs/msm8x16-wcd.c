@@ -2533,7 +2533,9 @@ static int msm8x16_wcd_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 	char *internal2_text = "Internal2";
 	char *internal3_text = "Internal3";
 	char *external2_text = "External2";
+#ifndef CONFIG_MACH_WT88047
 	char *external_text = "External";
+#endif
 	bool micbias2;
 
 	dev_dbg(codec->dev, "%s %d\n", __func__, event);
@@ -2564,11 +2566,13 @@ static int msm8x16_wcd_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 			snd_soc_update_bits(codec, micb_int_reg, 0x2, 0x2);
 #endif
 		}
+#ifndef CONFIG_MACH_WT88047
 		if (!strnstr(w->name, external_text, 30))
 			snd_soc_update_bits(codec,
 				MSM8X16_WCD_A_ANALOG_MICB_1_EN, 0x05, 0x04);
 		if (w->reg == MSM8X16_WCD_A_ANALOG_MICB_1_EN)
 			msm8x16_wcd_configure_cap(codec, true, micbias2);
+#endif
 
 		break;
 	case SND_SOC_DAPM_POST_PMU:
