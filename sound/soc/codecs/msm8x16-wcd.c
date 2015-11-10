@@ -3087,6 +3087,10 @@ static int msm8x16_wcd_hph_pa_event(struct snd_soc_dapm_widget *w,
 			snd_soc_update_bits(codec,
 				MSM8X16_WCD_A_CDC_RX2_B6_CTL, 0x01, 0x00);
 		}
+#ifdef CONFIG_MACH_WT88047
+		// TODO: Is hadset connected?
+		gpio_direction_output(EXT_SPK_AMP_HEADSET_GPIO, true);
+#endif
 		break;
 
 	case SND_SOC_DAPM_PRE_PMD:
@@ -3127,6 +3131,9 @@ static int msm8x16_wcd_hph_pa_event(struct snd_soc_dapm_widget *w,
 			"%s: sleep 10 ms after %s PA disable.\n", __func__,
 			w->name);
 		usleep_range(10000, 10100);
+#ifdef CONFIG_MACH_WT88047
+		gpio_direction_output(EXT_SPK_AMP_HEADSET_GPIO, false);
+#endif
 		break;
 	}
 	return 0;
