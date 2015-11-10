@@ -250,6 +250,36 @@ static int msm8x16_mclk_event(struct snd_soc_dapm_widget *w,
 static struct delayed_work lineout_amp_enable;
 static struct delayed_work lineout_amp_dualmode;
 
+static void msm8x16_ext_spk_gpio_request(void)
+{
+	if (gpio_request(EXT_SPK_AMP_GPIO, "ext_spk_amp_gpio")) {
+		pr_err("%s: gpio_request failed for ext_spk_amp_gpio.\n", __func__);
+		return;
+	}
+
+	if (gpio_request(EXT_SPK_AMP_GPIO_1, "ext_spk_amp_gpio_1")) {
+		pr_err("%s: gpio_request failed for ext_spk_amp_gpio_1.\n", __func__);
+		return;
+	}
+
+	if (gpio_request(EXT_SPK_AMP_HEADSET_GPIO, "ext_spk_amp_headset_gpio")) {
+		pr_err("%s: gpio_request failed for ext_spk_amp_headset_gpio.\n", __func__);
+		return;
+	}
+}
+
+static void msm8x16_ext_spk_gpio_free(void)
+{
+	if (gpio_is_valid(EXT_SPK_AMP_GPIO))
+		gpio_free(EXT_SPK_AMP_GPIO);
+
+	if (gpio_is_valid(EXT_SPK_AMP_GPIO_1))
+		gpio_free(EXT_SPK_AMP_GPIO_1);
+
+	if (gpio_is_valid(EXT_SPK_AMP_HEADSET_GPIO))
+		gpio_free(EXT_SPK_AMP_HEADSET_GPIO);
+}
+
 static void msm8x16_ext_spk_delayed_enable(struct work_struct *work)
 {
 	int i;
@@ -1510,6 +1540,8 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	}
 
 #ifdef CONFIG_MACH_WT88047
+	msm8x16_ext_spk_gpio_request();
+
 	INIT_DELAYED_WORK(&lineout_amp_enable, msm8x16_ext_spk_delayed_enable);
 	INIT_DELAYED_WORK(&lineout_amp_dualmode, msm8x16_ext_spk_delayed_dualmode);
 #endif
@@ -2869,6 +2901,9 @@ static int msm8x16_asoc_machine_remove(struct platform_device *pdev)
 		iounmap(pdata->vaddr_gpio_mux_mic_ctl);
 	if (pdata->vaddr_gpio_mux_pcm_ctl)
 		iounmap(pdata->vaddr_gpio_mux_pcm_ctl);
+#ifdef CONFIG_MACH_WT88047
+	msm8x16_ext_spk_gpio_free();
+#endif
 	snd_soc_unregister_card(card);
 	mutex_destroy(&pdata->cdc_mclk_mutex);
 	return 0;
