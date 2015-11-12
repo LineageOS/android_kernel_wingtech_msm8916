@@ -371,6 +371,13 @@ int msm_jpeg_platform_init(struct platform_device *pdev,
 
 	set_vbif_params(pgmn_dev, pgmn_dev->jpeg_vbif);
 
+	if (pgmn_dev->hw_version == JPEG_8939) {
+		writel_relaxed(0x0000550e,
+				jpeg_base + JPEG_FE_QOS_CFG);
+		writel_relaxed(0x00005555,
+				jpeg_base + JPEG_WE_QOS_CFG);
+	}
+
 	rc = request_irq(jpeg_irq, handler, IRQF_TRIGGER_RISING, "jpeg",
 		context);
 	if (rc) {

@@ -339,10 +339,10 @@ static int msm_isp_get_max_clk_rate(struct vfe_device *vfe_dev, long *rate)
 	}
 
 	clk_idx = vfe_dev->hw_info->vfe_clk_idx;
-	if (clk_idx >= ARRAY_SIZE(vfe_dev->vfe_clk)) {
+	if (clk_idx >= vfe_dev->num_clk) {
 		pr_err("%s:%d failed: clk_idx %d max array size %d\n",
 			__func__, __LINE__, clk_idx,
-			ARRAY_SIZE(vfe_dev->vfe_clk));
+			vfe_dev->num_clk);
 		return -EINVAL;
 	}
 
@@ -752,11 +752,10 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 			vfe_dev->axi_data.src_info[VFE_PIX_0].last_updt_frm_id;
 		if (vfe_dev->axi_data.frame_id[session_id] != *cfg_data
 			|| update_id == *cfg_data) {
-			pr_err("hw update lock failed,acquire id %u\n",
-				*cfg_data);
-			pr_err("hw update lock failed,current id %u\n",
-				vfe_dev->axi_data.frame_id[session_id]);
-			pr_err("hw update lock failed,last id %u\n",
+			pr_err("%s hw update lock failed acq %d, cur id %u, last id %u\n",
+				__func__,
+				*cfg_data,
+				vfe_dev->axi_data.frame_id[session_id],
 				update_id);
 			return -EINVAL;
 		}
@@ -767,9 +766,8 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 			vfe_dev->axi_data.src_info[VFE_PIX_0].session_id;
 		if (vfe_dev->axi_data.frame_id[session_id]
 			!= *cfg_data) {
-			pr_err("hw update across frame boundary,begin id %u\n",
-				*cfg_data);
-			pr_err("hw update across frame boundary,end id %u\n",
+			pr_err("hw update across frame boundary,begin id %u, end id %d\n",
+				*cfg_data,
 				vfe_dev->axi_data.frame_id[session_id]);
 		}
 		vfe_dev->axi_data.src_info[VFE_PIX_0].last_updt_frm_id =
@@ -1185,6 +1183,7 @@ static inline void msm_isp_process_overflow_irq(
 {
 	uint32_t overflow_mask;
 	uint32_t halt_restart_mask0, halt_restart_mask1;
+	uint8_t cur_stream_cnt = 0;
 	/*Mask out all other irqs if recovery is started*/
 	if (atomic_read(&vfe_dev->error_info.overflow_state) !=
 		NO_OVERFLOW) {
@@ -1201,6 +1200,16 @@ static inline void msm_isp_process_overflow_irq(
 		get_overflow_mask(&overflow_mask);
 	overflow_mask &= *irq_status1;
 	if (overflow_mask) {
+		cur_stream_cnt = msm_isp_get_curr_stream_cnt(vfe_dev);
+		if (cur_stream_cnt == 0) {
+			/* When immediate stop is issued during streamoff and
+			   AXI bridge is halted, if write masters are still
+			   active, then it's possible to get overflow Irq
+			   because WM is still writing pixels into UB, but UB
+			   has no way to write into bus. Since everything is
+			   being stopped anyway, skip the overflow recovery */
+			return;
+		}
 		pr_warn("%s: Bus overflow detected: 0x%x\n",
 			__func__, overflow_mask);
 		atomic_set(&vfe_dev->error_info.overflow_state,
@@ -1228,20 +1237,20 @@ static inline void msm_isp_reset_burst_count(
 	int i;
 	struct msm_vfe_axi_shared_data *axi_data = &vfe_dev->axi_data;
 	struct msm_vfe_axi_stream *stream_info;
-	struct msm_vfe_axi_stream_request_cmd framedrop_info;
+	uint32_t framedrop_period = 0;
 	for (i = 0; i < MAX_NUM_STREAM; i++) {
 		stream_info = &axi_data->stream_info[i];
 		if (stream_info->state != ACTIVE)
 			continue;
 		if (stream_info->stream_type == BURST_STREAM &&
 			stream_info->num_burst_capture != 0) {
-			framedrop_info.burst_count =
-				stream_info->num_burst_capture;
-			framedrop_info.frame_skip_pattern =
-				stream_info->frame_skip_pattern;
-			framedrop_info.init_frame_drop = 0;
-			msm_isp_calculate_framedrop(&vfe_dev->axi_data,
-				&framedrop_info);
+			framedrop_period = msm_isp_get_framedrop_period(
+			   stream_info->frame_skip_pattern);
+			stream_info->burst_frame_count =
+				stream_info->init_frame_drop +
+				(stream_info->num_burst_capture - 1) *
+				framedrop_period + 1;
+			msm_isp_reset_framedrop(vfe_dev, stream_info);
 		}
 	}
 }
@@ -1510,10 +1519,6 @@ int msm_isp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	vfe_dev->axi_data.hw_info = vfe_dev->hw_info->axi_hw_info;
 	vfe_dev->taskletq_idx = 0;
 	vfe_dev->vt_enable = 0;
-	vfe_dev->p_avtimer_lsw = NULL;
-	vfe_dev->p_avtimer_msw = NULL;
-	vfe_dev->p_avtimer_ctl = NULL;
-	vfe_dev->avtimer_scaler = 1; /*No scaling*/
 	mutex_unlock(&vfe_dev->core_mutex);
 	mutex_unlock(&vfe_dev->realtime_mutex);
 	return 0;
@@ -1560,12 +1565,8 @@ int msm_isp_close_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	vfe_dev->buf_mgr->ops->buf_mgr_deinit(vfe_dev->buf_mgr);
 	vfe_dev->hw_info->vfe_ops.core_ops.release_hw(vfe_dev);
 	if (vfe_dev->vt_enable) {
-		iounmap(vfe_dev->p_avtimer_lsw);
-		iounmap(vfe_dev->p_avtimer_msw);
-		iounmap(vfe_dev->p_avtimer_ctl);
 		msm_isp_end_avtimer();
 		vfe_dev->vt_enable = 0;
-		vfe_dev->avtimer_scaler = 1;
 	}
 	mutex_unlock(&vfe_dev->core_mutex);
 	mutex_unlock(&vfe_dev->realtime_mutex);

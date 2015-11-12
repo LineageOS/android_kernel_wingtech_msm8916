@@ -32,6 +32,7 @@
 #define VFE40_8x26_VERSION 0x20000013
 #define VFE40_8x26V2_VERSION 0x20010014
 #define VFE40_8916_VERSION 0x10030000
+#define VFE40_8939_VERSION 0x10040000
 
 #define MAX_IOMMU_CTX 2
 #define MAX_NUM_WM 7
@@ -41,15 +42,6 @@
 #define MAX_NUM_STATS_COMP_MASK 2
 #define MAX_INIT_FRAME_DROP 31
 #define ISP_Q2 (1 << 2)
-
-#define AVTIMER_MSW_PHY_ADDR 0xFE05300C
-#define AVTIMER_LSW_PHY_ADDR 0xFE053008
-#define AVTIMER_MSW_PHY_ADDR_8916 0x7706010
-#define AVTIMER_LSW_PHY_ADDR_8916 0x770600C
-#define AVTIMER_MODE_CTL_PHY_ADDR_8916 0x7706040
-/*AVTimer h/w is configured to generate 27Mhz ticks*/
-#define AVTIMER_TICK_SCALER_8916 27
-#define AVTIMER_ITERATION_CTR 16
 
 #define VFE_PING_FLAG 0xFFFFFFFF
 #define VFE_PONG_FLAG 0x0
@@ -477,6 +469,12 @@ struct msm_vbif_cntrs {
 	int total_vbif_cnt_2;
 };
 
+struct msm_vfe_hw_init_parms {
+	const char *entries;
+	const char *regs;
+	const char *settings;
+};
+
 struct vfe_device {
 	struct platform_device *pdev;
 	struct msm_sd_subdev subdev;
@@ -491,7 +489,7 @@ struct vfe_device {
 	struct device *iommu_ctx[MAX_IOMMU_CTX];
 
 	struct regulator *fs_vfe;
-	struct clk *vfe_clk[7];
+	struct clk **vfe_clk;
 	uint32_t num_clk;
 
 	uint32_t bus_perf_client;
@@ -509,6 +507,7 @@ struct vfe_device {
 	uint8_t taskletq_reg_update_idx;
 	spinlock_t  tasklet_lock;
 	spinlock_t  shared_data_lock;
+	spinlock_t  sof_lock;
 	struct list_head tasklet_q;
 	struct list_head tasklet_regupdate_q;
 	struct tasklet_struct vfe_tasklet;
@@ -526,10 +525,6 @@ struct vfe_device {
 	int vfe_clk_idx;
 	uint32_t vfe_open_cnt;
 	uint8_t vt_enable;
-	void __iomem *p_avtimer_msw;
-	void __iomem *p_avtimer_lsw;
-	void __iomem *p_avtimer_ctl;
-	uint8_t avtimer_scaler;
 	uint8_t ignore_error;
 	struct msm_isp_statistics *stats;
 	struct msm_vbif_cntrs vbif_cntrs;

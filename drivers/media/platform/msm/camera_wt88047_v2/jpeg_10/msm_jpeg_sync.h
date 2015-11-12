@@ -25,6 +25,7 @@
 
 #define JPEG_8974_V1 0x10000000
 #define JPEG_8974_V2 0x10010000
+#define JPEG_8939    0x30020000
 
 enum msm_jpeg_state {
 	MSM_JPEG_INIT,

@@ -115,6 +115,9 @@
 
 #define JPEG_HW_VERSION                   (JPEG_REG_BASE + 0x00000000)
 
+#define JPEG_FE_QOS_CFG                   (JPEG_REG_BASE + 0x00000028)
+#define JPEG_WE_QOS_CFG                   (JPEG_REG_BASE + 0x000000C8)
+
 #define VBIF_BASE_ADDRESS                      0xFDA60000
 #define VBIF_REGION_SIZE                       0xC30
 #define JPEG_VBIF_CLKON                        0x4
