@@ -776,7 +776,7 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	st->cdev.sensors_poll_delay = yas_poll_delay_set;
 	st->cdev.sensors_self_test = yas_self_test;
 
-	ret = sensors_classdev_register(&i2c->dev, &st->cdev);
+	ret = sensors_classdev_register(&st->input_dev->dev, &st->cdev);
 	if (ret) {
 		dev_err(&i2c->dev, "class device create failed: %d\n", ret);
 		goto error_classdev_unregister;
