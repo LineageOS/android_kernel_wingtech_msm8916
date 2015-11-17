@@ -34,7 +34,6 @@
 #include <linux/of_gpio.h>
 #include <linux/sensors.h>
 #include <linux/regulator/consumer.h>
-#include <linux/sensors_ftm.h>
 
 #include "yas.h"
 
@@ -49,6 +48,7 @@
 #define YAS_MSM_MAX_RANGE	(1200)
 #define YAS_MSM_RESOLUTION	"1"
 #define YAS_MSM_SENSOR_POWER	"0.40"
+#define YAS_MSM_SENSOR_NAME	"yas533-mag"
 #endif
 #if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
 #define YAS_MSM_NAME		"compass"
@@ -60,6 +60,7 @@
 #define YAS_MSM_MAX_RANGE	(2000)
 #define YAS_MSM_RESOLUTION	"1"
 #define YAS_MSM_SENSOR_POWER	"0.28"
+#define YAS_MSM_SENSOR_NAME	"yas537-mag"
 #endif
 
 #define YAS533_VDD_MIN_UV  2000000
@@ -95,7 +96,7 @@ struct yas_state {
 };
 static struct yas_state *pdev_data;
 static struct sensors_classdev sensors_cdev = {
-	.name = "yas533-mag",
+	.name = YAS_MSM_SENSOR_NAME,
 	.vendor = "Yamaha",
 	.version = 1,
 	.handle = SENSORS_MAGNETIC_FIELD_HANDLE,
@@ -633,45 +634,6 @@ static int sensor_parse_dt(struct device *dev,
 }
 /******************regulator ends***********************/
 
-static ssize_t yas_mag_selftest_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	struct yas_state *st = i2c_get_clientdata(this_client);
-	struct yas532_self_test_result sample;
-	int test_result;
-	int32_t ret;
-
-	mutex_lock(&st->lock);
-	test_result = st->mag.ext(YAS532_SELF_TEST, &sample);
-
-	printk(KERN_ERR"%s, id = %d, xy1y2[0] = %d, xy1y2[1] = %d,xy1y2[2] = %d,dir = %d,sx = %d,sy = %d,xyz[0] = %d,xyz[1] = %d,xyz[2] = %d\n",
-			__func__, sample.id, sample.xy1y2[0],sample.xy1y2[1],sample.xy1y2[2],sample.dir,sample.sx,sample.sy,sample.xyz[0],sample.xyz[1],sample.xyz[2]);
-
-	if(test_result < 0)
-		ret = 0;    // test fail
-	else
-		ret = 1;    // test success
-
-	mutex_unlock(&st->lock);
-
-	printk("%s over. test_result = %d, ret = %d\n", __func__, test_result, ret);    
-
-	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
-}
-
-static struct kobj_attribute test = 
-{
-	.attr = {"test", 0444},
-	.show = yas_mag_selftest_show,
-};
-
-static const struct attribute *yas_mag_ftm_attrs[] = 
-{
-	&test.attr,
-	NULL
-};
-
-static struct dev_ftm yas_mag_ftm;
-
 static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 {
 	struct yas_state *st = NULL;
@@ -806,12 +768,6 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	if (pdata->power_on)
 		pdata->power_on(false);
 
-	yas_mag_ftm.name = "geomagnetic";
-	yas_mag_ftm.i2c_client = st->client;
-	yas_mag_ftm.priv_data = st;
-	yas_mag_ftm.attrs = yas_mag_ftm_attrs;
-	register_single_dev_ftm(&yas_mag_ftm);
-
 	printk("%s ok.", __func__);
 
 	return 0;
@@ -900,6 +856,7 @@ MODULE_DEVICE_TABLE(i2c, yas_id);
 
 static struct of_device_id yas_match_table[] = {
 	{ .compatible = "yamaha,yas533", },
+	{ .compatible = "yamaha,yas537", },
 	{ },
 };
 

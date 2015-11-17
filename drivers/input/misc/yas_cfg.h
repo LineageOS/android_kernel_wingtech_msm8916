@@ -81,7 +81,7 @@
  *----------------------------------------------------------------------------*/
 
 #define YAS_ACC_DRIVER				(YAS_ACC_DRIVER_BMI055)
-#define YAS_MAG_DRIVER				(YAS_MAG_DRIVER_YAS532)
+#define YAS_MAG_DRIVER				(YAS_MAG_DRIVER_YAS537)
 #define YAS_GYRO_DRIVER				(YAS_GYRO_DRIVER_BMI055)
 
 /*! Magnetic minimum calibration enable (0:Disable, 1: Enable) */
