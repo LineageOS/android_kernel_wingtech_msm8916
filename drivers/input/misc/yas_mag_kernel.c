@@ -309,10 +309,38 @@ static ssize_t yas_hard_offset_store(struct device *dev,
 		return -EFAULT;
 	return count;
 }
+
+static int yas_self_test(struct sensors_classdev *sensors_cdev)
+{
+	struct yas_state *st = container_of(sensors_cdev, struct yas_state, cdev);
+	struct yas532_self_test_result r;
+	int ret;
+	mutex_lock(&st->lock);
+	ret = st->mag.ext(YAS532_SELF_TEST, &r);
+	mutex_unlock(&st->lock);
+
+	if (ret < 0)
+		dev_err(&st->client->dev, "Self test mode failed\n");
+
+	return ret;
+}
 #endif
 
 #if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
+static int yas_self_test(struct sensors_classdev *sensors_cdev)
+{
+	struct yas_state *st = container_of(sensors_cdev, struct yas_state, cdev);
+	struct yas537_self_test_result r;
+	int ret;
+	mutex_lock(&st->lock);
+	ret = st->mag.ext(YAS537_SELF_TEST, &r);
+	mutex_unlock(&st->lock);
 
+	if (ret < 0)
+		dev_err(&st->client->dev, "Self test mode failed\n");
+
+	return ret;
+}
 
 static ssize_t yas_mag_average_sample_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -737,6 +765,7 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	st->cdev = sensors_cdev;
 	st->cdev.sensors_enable = yas_enable_set;
 	st->cdev.sensors_poll_delay = yas_poll_delay_set;
+	st->cdev.sensors_self_test = yas_self_test;
 
 	ret = sensors_classdev_register(&i2c->dev, &st->cdev);
 	if (ret) {
