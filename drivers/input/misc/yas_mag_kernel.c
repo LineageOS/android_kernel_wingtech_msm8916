@@ -435,10 +435,12 @@ static void yas_work_func(struct work_struct *work)
 	int32_t poll_delay;
 	uint32_t time_before, time_after;
 	int ret, i;
+	ktime_t timestamp;
 
 	if(atomic_read(&st->enable) == 0)
 		return;
 
+	timestamp = ktime_get_boottime();
 	time_before = yas_current_time();
 	mutex_lock(&st->lock);
 	ret = st->mag.measure(mag, 1);
@@ -453,6 +455,12 @@ static void yas_work_func(struct work_struct *work)
 		input_report_abs(st->input_dev, ABS_X, mag[0].xyz.v[0]);
 		input_report_abs(st->input_dev, ABS_Y, mag[0].xyz.v[1]);
 		input_report_abs(st->input_dev, ABS_Z, mag[0].xyz.v[2]);
+		input_event(st->input_dev,
+			EV_SYN, SYN_TIME_SEC,
+			ktime_to_timespec(timestamp).tv_sec);
+		input_event(st->input_dev,
+			EV_SYN, SYN_TIME_NSEC,
+			ktime_to_timespec(timestamp).tv_nsec);
 		input_sync(st->input_dev);
 	}
 	time_after = yas_current_time();
