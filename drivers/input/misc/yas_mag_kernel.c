@@ -101,8 +101,13 @@ static struct sensors_classdev sensors_cdev = {
 	.version = 1,
 	.handle = SENSORS_MAGNETIC_FIELD_HANDLE,
 	.type = SENSOR_TYPE_MAGNETIC_FIELD,
+#ifdef CONFIG_MACH_WT88047
+	.max_range = "2000",
+	.resolution = "0.3",
+#else
 	.max_range = "1200",
 	.resolution = "1",
+#endif
 	.sensor_power = "0.40",
 	.min_delay = 10000,
 	.max_delay = 10000,
