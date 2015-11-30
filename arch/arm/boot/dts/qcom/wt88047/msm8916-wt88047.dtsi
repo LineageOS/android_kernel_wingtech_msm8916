@@ -240,7 +240,8 @@
 		liteon,irq-gpio = <&msm_gpio 113 0x2>;
 		liteon,als-ps-persist = <0>;
 		liteon,ps-led = <0x7f>;
-		liteon,ps-pulses = <4>;
+		liteon,ps-pulses = <15>;
+		liteon,ps-distance-table = <1700 1200 900 500 320 200 150>;
 		liteon,wakeup-threshold = <4>;
 		liteon,als-integration-time = <0>;
 		liteon,als-equation-0 = <1 1 7743 1059 600 1>;
