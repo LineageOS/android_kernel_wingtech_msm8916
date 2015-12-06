@@ -245,10 +245,16 @@ static struct sensors_classdev als_cdev = {
 	.version = 1,
 	.handle = SENSORS_LIGHT_HANDLE,
 	.type = SENSOR_TYPE_LIGHT,
+#ifdef CONFIG_MACH_WT88047
+	.max_range = "60000",
+	.resolution = "0.0125",
+	.min_delay = 0,
+#else
 	.max_range = "65536",
 	.resolution = "1.0",
-	.sensor_power = "0.25",
 	.min_delay = 50000,
+#endif
+	.sensor_power = "0.25",
 	.max_delay = 2000,
 	.fifo_reserved_event_count = 0,
 	.fifo_max_event_count = 0,
@@ -265,10 +271,16 @@ static struct sensors_classdev ps_cdev = {
 	.version = 1,
 	.handle = SENSORS_PROXIMITY_HANDLE,
 	.type = SENSOR_TYPE_PROXIMITY,
+#ifdef CONFIG_MACH_WT88047
+	.max_range = "5",
+	.resolution = "5.0",
+	.min_delay = 0,
+#else
 	.max_range = "7",
 	.resolution = "1.0",
-	.sensor_power = "0.25",
 	.min_delay = 10000,
+#endif
+	.sensor_power = "0.25",
 	.max_delay = 2000,
 	.fifo_reserved_event_count = 0,
 	.fifo_max_event_count = 0,
