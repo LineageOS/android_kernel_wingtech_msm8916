@@ -404,18 +404,18 @@ static void msm8x16_ext_spk_delayed_enable(struct work_struct *work)
 	int i;
 
 	gpio_direction_output(EXT_SPK_AMP_HEADSET_GPIO, 0);
-	usleep_range(13000, 15000);
+	usleep_range(3000, 5000);
 	gpio_direction_output(EXT_SPK_AMP_GPIO, 1);
 	usleep_range(13000, 15000);
 
-	for(i = 5; i; --i)
-	{
+	for (i = 0; i < 1; i++) {
 		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
-		usleep_range(100, 105);
+		usleep_range(13000, 15000);
 		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 0);
-		usleep_range(100, 105);
+		usleep_range(3000, 5000);
 	}
 	gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
+	usleep_range(13000, 15000);
 
 	pr_info("%s: Enable external speaker PAs.\n", __func__);
 }
@@ -429,14 +429,14 @@ static void msm8x16_ext_spk_delayed_dualmode(struct work_struct *work)
 	gpio_direction_output(EXT_SPK_AMP_GPIO, 1);
 	usleep_range(13000, 15000);
 
-	for(i = 5; i; --i)
-	{
+	for (i = 0; i < 1; i++) {
 		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
-		usleep_range(100, 105);
+		usleep_range(13000, 15000);
 		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 0);
-		usleep_range(100, 105);
+		usleep_range(3000, 5000);
 	}
 	gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
+	usleep_range(13000, 15000);
 
 	pr_info("%s: Enable external speaker PAs dualmode.\n", __func__);
 }
@@ -668,13 +668,14 @@ static int lineout_status_get(struct snd_kcontrol *kcontrol,
 static int lineout_status_put(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
-	pr_info("%s: external speaker PA mode: %ld\n", __func__, ucontrol->value.integer.value[0]);
+	pr_debug("%s: external speaker PA mode: %ld\n", __func__, ucontrol->value.integer.value[0]);
 
 	switch (ucontrol->value.integer.value[0]) {
 	case 0:
 		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 0);
 		usleep_range(3000, 5000);
 		gpio_direction_output(EXT_SPK_AMP_GPIO , 0);
+		usleep_range(3000, 5000);
 		break;
 	case 1:
 		schedule_delayed_work(&lineout_amp_enable, msecs_to_jiffies(100));
