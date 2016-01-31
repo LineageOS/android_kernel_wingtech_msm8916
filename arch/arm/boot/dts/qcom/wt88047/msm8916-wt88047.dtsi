@@ -31,7 +31,7 @@
                 };
 
                 splash_region@83000000 { /* Give this region to mdss_fb0 */
-                        status = "disabled";
+                        /* status = "disabled"; */
                 };
 
                 secure_region@0 {
@@ -138,8 +138,8 @@
 	mdss_fb0: qcom,mdss_fb_primary {
 		/* Ketut P. Kumajaya: For old bootloader, old splash image */
 		/* Both recovery and bootanimation framebuffer need this */
-		qcom,memblock-reserve = <0x83200000 0xfa0000>;
-		qcom,mdss-fb-splash-logo-enabled;
+		/* qcom,memblock-reserve = <0x83200000 0xfa0000>;
+		qcom,mdss-fb-splash-logo-enabled; */
 	};
 };
 
