@@ -17,9 +17,9 @@
 #include "wt88047/msm8916-wt88047.dtsi"
 
 / {
-	model = "Qualcomm Technologies, Inc. MSM 8916 WT88047";
-	compatible = "qcom,msm8916-qrd", "qcom,msm8916", "qcom,qrd";
-	qcom,board-id = <0x1010b 7>;
+	model = "Qualcomm Technologies, Inc. MSM 8916 QRD SKUI";
+	compatible = "qcom,msm8916-qrd-wt88047", "qcom,msm8916-qrd", "qcom,msm8916", "qcom,qrd";
+	qcom,board-id = <0x1010b 7 0x1000b 12 0x1010b 12 0x3010b 12>;
 };
 
 &soc {
@@ -40,11 +40,11 @@
 			qcom,fg-ibatt-standby-ma = <200>;
 			qcom,fg-cc-to-cv-mv = <4328>;
 			qcom,fg-auto-recharge-soc = <99>;
+			qcom,warm-recharge-thresh-mv = <200>;
 			qcom,thermistor-c1-coeff = <0x85d2>;
 			qcom,float-voltage-mv = <4350>;
-			qcom,iterm-ma = <200>;
-			qcom,recharge-thresh-mv = <100>;
-			qcom,warm-recharge-thresh-mv = <200>;
+			qcom,iterm-ma = <100>;
+			qcom,otg-batt-curr-limit = <950>;
 			qcom,thermal-mitigation = <1500 700 600 0>;
 			qcom,config-hard-thresholds;
 			qcom,hot-bat-decidegc = <600>;
@@ -58,6 +58,8 @@
 			qcom,cool-bat-ma = <600>;
 			regulator-name = "smb1360_otg_vreg";
 			qcom,shdn-after-pwroff;
+			qcom,fg-reset-at-pon;
+			qcom,fg-reset-thresold-mv = <100>;
 		};
 	};
 
@@ -110,12 +112,28 @@
 };
 
 &pm8916_chg {
+	qcom,vddmax-mv = <4350>;
+	qcom,vddsafe-mv = <4350>;
+	qcom,vinmin-mv = <4470>;
+	qcom,thermal-mitigation = <1440 1150 460 0>;
+	qcom,cool-bat-decidegc = <150>;
+	qcom,cool-bat-mv = <4350>;
+	qcom,warm-bat-mv = <4350>;
+	qcom,ibatmax-warm-ma = <1150>;
+	qcom,ibatmax-cool-ma = <460>;
+	qcom,batt-hot-percentage = <35>;
+	qcom,batt-cold-percentage = <70>;
+	qcom,tchg-mins = <512>;
+	qcom,resume-soc = <99>;
 	status = "ok";
 	qcom,use-external-charger;
 };
 
 &pm8916_bms {
 	status = "ok";
+	qcom,v-cutoff-uv = <3300000>;
+	qcom,max-voltage-uv = <4350000>;
+	qcom,shutdown-soc-valid-limit = <10>;
 	qcom,disable-bms;
 };
 
@@ -132,7 +150,7 @@
 		qcom,vibrator@c000 {
 			status = "okay";
 			qcom,vib-timeout-ms = <15000>;
-			qcom,vib-vtg-level-mV = <2700>;
+			qcom,vib-vtg-level-mV = <3000>;
 		};
 	};
 };
@@ -142,8 +160,13 @@
 	qcom,qpnp-rtc-alarm-pwrup = <1>;
 };
 
+&pm8916_l11 {
+	regulator-max-microvolt = <3300000>;
+	qcom,init-voltage = <3000000>;
+};
+
 &pm8916_l16 {
-	qcom,init-voltage = <2800000>;
+	qcom,init-voltage = <1800000>;
 	regulator-always-on;
 };
 
@@ -189,5 +212,5 @@
 };
 
 &apc_vreg_corner {
-	qcom,cpr-voltage-floor = <1050000 1100000 1250000>;
+	qcom,cpr-voltage-floor = <1050000 1050000 1162500>;
 };

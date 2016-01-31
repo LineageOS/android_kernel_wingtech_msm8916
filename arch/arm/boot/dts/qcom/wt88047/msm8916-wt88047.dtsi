@@ -130,22 +130,10 @@
 		qcom,vin-sel = <0>;		/* VPH_PWR */
 		qcom,master-en = <1>;		/* Enable MPP */
 	};
-
-	mpp@a100 { /* MPP 2 */
-		/* HR LED */
-		qcom,mode = <4>;
-		qcom,invert = <0>;
-		qcom,output-type = <0>;
-		qcom,vin-sel = <2>;
-		qcom,src-sel = <0>;
-		qcom,ain-route = <1>;
-		qcom,master-en = <1>;
-	};
 };
 
 &mdss_mdp {
 	qcom,mdss-pref-prim-intf = "dsi";
-	qcom,vbif-settings = <0x4 0x1>, <0xd8 0x707>, <0x124 0x3>;
 
 	mdss_fb0: qcom,mdss_fb_primary {
 		/* Ketut P. Kumajaya: For old bootloader, old splash image */
@@ -158,9 +146,21 @@
 &pmx_mdss {
 	qcom,num-grp-pins = <1>;
 	qcom,pins = <&gp 25>;
+	mdss_dsi_active: active {
+		drive-strength = <8>; /* 8 mA */
+		bias-disable = <0>; /* no pull */
+		output-high;
+	};
+	mdss_dsi_suspend: suspend {
+		drive-strength = <2>; /* 2 mA */
+		bias-pull-down; /* pull down */
+		output-low;
+	};
 };
 
 &mdss_dsi0 {
+	qcom,platform-regulator-settings = [02 09 03 00 20 00 01];
+
 	qcom,dsi-pref-prim-pan = <&dsi_r69431_720p_video>;
 	qcom,dsi-pref-sub-pan = <&dsi_nt35521_720p_video>;
 	qcom,dsi-pref-sub1-pan = <&dsi_otm1285a_720p_video>;
@@ -226,6 +226,38 @@
 			bias-pull-down;
 		};
 	};
+
+	fan-otg-pin {
+		qcom,pins = <&gp 114>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "fan-otg-pin";
+		otg_pin_high: otg_pin_high {
+			drive-strength = <2>;
+			bias-pull-up;
+			output-high;
+		};
+		otg_pin_low: otg_pin_low  {
+			drive-strength = <2>;
+			bias-pull-down;
+			output-low;
+		};
+	};
+
+	akm_reset_pin {
+		qcom,pins = <&gp 36>;
+		qcom,pin-func = <0>;
+		qcom,num-grp-pins = <1>;
+		label = "akm_reset_pin";
+		akm_default: akm_default {
+			drive-strength = <6>;
+			bias-pull-up;
+		};
+		akm_sleep: akm_sleep {
+			drive-strength = <2>;
+			bias-pull-down;
+		};
+	};
 };
 
 &i2c_0 { /* BLSP1 QUP2 */
@@ -270,9 +302,13 @@
 	akm@c {
 		compatible = "ak,ak09911";
 		reg = <0xc>;
+		pinctrl-names = "default", "sleep";
+		pinctrl-0 = <&akm_default>;
+		pinctrl-1 = <&akm_sleep>;
 		vdd-supply = <&pm8916_l17>;
 		vio-supply = <&pm8916_l6>;
 		akm,layout = <0x6>;
+		akm,gpio_rstn = <&msm_gpio 36 0x0>;
 		akm,auto-report;
 	};
 
@@ -281,6 +317,7 @@
 		reg = <0x2e>;
 		vdd-supply = <&pm8916_l17>;
 		vio-supply = <&pm8916_l6>;
+		yas,position = <5>;
 	};
 };
 
