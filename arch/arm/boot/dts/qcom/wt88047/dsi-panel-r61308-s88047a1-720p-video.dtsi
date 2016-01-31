@@ -38,7 +38,7 @@
 		qcom,mdss-dsi-color-order = "rgb_swap_rgb";
 		qcom,mdss-dsi-underflow-color = <0xff>;
 		qcom,mdss-dsi-border-color = <0>;
-		qcom,mdss-dsi-on-command = [05 01 00 00 78 00 02 11 00 39 01 00 00 00 00 02 36 00 39 01 00 00 00 00 02 3a 07 29 01 00 00 00 00 02 b0 04 29 01 00 00 00 00 08 c1 50 02 22 00 00 ed 11 29 01 00 00 00 00 19 c8 1a 24 29 2d 32 37 14 13 10 0c 0a 06 1a 24 28 2d 32 37 14 13 10 0c 0a 06 29 01 00 00 00 00 09 cb 10 20 40 80 a0 c0 d0 e0 29 01 00 00 00 00 04 cc c8 d8 ff 29 01 00 00 00 00 08 cd 1c 1e 1e 1d 1c 1e 1e 29 01 00 00 00 00 08 ce 1e 1e 1e 1d 1d 1e 1e 29 01 00 00 00 00 08 cf 1e 1f 20 20 20 20 21 29 01 00 00 00 00 02 b0 03 05 01 00 00 28 00 02 29 00];
+		qcom,mdss-dsi-on-command = [05 01 00 00 78 00 02 11 00 39 01 00 00 00 00 02 36 00 39 01 00 00 00 00 02 3a 07 29 01 00 00 00 00 02 b0 04 29 01 00 00 00 00 08 c1 50 02 22 00 00 ed 11 29 01 00 00 00 00 19 c8 1a 24 29 2d 32 37 14 13 10 0c 0a 06 1a 24 28 2d 32 37 14 13 10 0c 0a 06 29 01 00 00 00 00 09 cb 10 20 40 80 a0 c0 d0 e0 29 01 00 00 00 00 04 cc c8 d8 ff 29 01 00 00 00 00 08 cd 1c 1e 1e 1d 1c 1e 1e 29 01 00 00 00 00 08 ce 1e 1e 1e 1d 1d 1e 1e 29 01 00 00 00 00 08 cf 1e 1f 20 20 20 20 21 29 01 00 00 00 00 02 b0 03 05 01 00 00 0a 00 02 29 00];
 		qcom,mdss-dsi-off-command = [05 01 00 00 32 00 02 28 00 05 01 00 00 78 00 02 10 00];
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
@@ -52,10 +52,11 @@
 		qcom,mdss-dsi-panel-timings = [a8 26 1a 00 50 54 1E 2a 1E 03 04 00];
 		qcom,mdss-dsi-t-clk-post = <0x03>;
 		qcom,mdss-dsi-t-clk-pre = <0x21>;
-		qcom,mdss-dsi-panel-status-command = [06 01 00 01 00 00 02 0A 08];
-		qcom,mdss-dsi-panel-status-command-state = "dsi_lp_mode";
+		qcom,mdss-dsi-tx-eot-append;
 		qcom,mdss-dsi-panel-status-check-mode = "reg_read";
-		qcom,mdss-dsi-panel-status-value = <0x1c>;
+		qcom,mdss-dsi-panel-status-command-state = "dsi_lp_mode";
+		qcom,mdss-dsi-panel-status-command = [06 01 00 01 05 00 02 0a 08];
+		qcom,mdss-dsi-panel-status-value = <0x1 0x1c>;
 		qcom,mdss-dsi-bl-min-level = <1>;
 		qcom,mdss-dsi-bl-max-level = <255>;
 		qcom,mdss-dsi-bl-pmic-pwm-frequency = <100>;
@@ -64,5 +65,7 @@
 		qcom,mdss-dsi-mdp-trigger = "none";
 		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_pwm";
 		qcom,mdss-dsi-reset-sequence = <1 5>, <0 10>, <1 30>;
+		qcom,mdss-dsi-lp11-init;
+		qcom,mdss-dsi-init-delay-us = <50000>;
 	};
 };

@@ -38,14 +38,8 @@
 		qcom,mdss-dsi-underflow-color = <0xff>;
 		qcom,mdss-dsi-border-color = <0>;
 		qcom,mdss-dsi-pixel-packing = "tight";
-		qcom,mdss-dsi-on-command = [39 01 00 00 00 00 06 f0 55 aa 52 08 00
-				39 01 00 00 00 00 02 c8 00
-				39 01 00 00 00 00 06 f0 55 aa 52 08 01
-				39 01 00 00 00 00 03 b5 04 04
-				39 01 00 00 00 00 03 b9 35 35
-				39 01 00 00 00 00 03 ba 25 25 05 01 00 00 78 00 02 11 00 05 01 00 00 00 00 02 29 00];
-		qcom,mdss-dsi-off-command = [05 01 00 00 00 00 02 28 00
-					05 01 00 00 00 00 02 10 00];
+		qcom,mdss-dsi-on-command = <0x39010000 0x6f0 0x55aa5208 0x390100 0x2 0xc8003901 0x0 0x6f055aa 0x52080239 0x1000000 0x5ef11 0x8161939 0x1000000 0x6f055 0xaa520801 0x39010000 0x3b5 0x4043901 0x0 0x3b93535 0x39010000 0x3ba 0x25250501 0x7800 0x2110005 0x1000000 0x22900>;
+		qcom,mdss-dsi-off-command = [05 01 00 00 00 00 02 28 00 05 01 00 00 00 00 02 10 00];
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
 		qcom,mdss-dsi-h-sync-pulse = <1>;
