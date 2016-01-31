@@ -227,23 +227,6 @@
 		};
 	};
 
-	fan-otg-pin {
-		qcom,pins = <&gp 114>;
-		qcom,num-grp-pins = <1>;
-		qcom,pin-func = <0>;
-		label = "fan-otg-pin";
-		otg_pin_high: otg_pin_high {
-			drive-strength = <2>;
-			bias-pull-up;
-			output-high;
-		};
-		otg_pin_low: otg_pin_low  {
-			drive-strength = <2>;
-			bias-pull-down;
-			output-low;
-		};
-	};
-
 	akm_reset_pin {
 		qcom,pins = <&gp 36>;
 		qcom,pin-func = <0>;
