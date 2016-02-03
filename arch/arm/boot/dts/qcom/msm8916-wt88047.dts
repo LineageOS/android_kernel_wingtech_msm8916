@@ -166,7 +166,8 @@
 };
 
 &pm8916_l16 {
-	qcom,init-voltage = <1800000>;
+	regulator-min-microvolt = <2600000>;
+	qcom,init-voltage = <2600000>;
 	regulator-always-on;
 };
 
