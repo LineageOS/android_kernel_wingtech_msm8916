@@ -401,44 +401,42 @@ static void msm8x16_ext_spk_gpio_free(void)
 
 static void msm8x16_ext_spk_delayed_enable(struct work_struct *work)
 {
-	int i;
+	int i = 0;
 
 	gpio_direction_output(EXT_SPK_AMP_HEADSET_GPIO, 0);
-	usleep_range(3000, 5000);
+	usleep_range(13000, 15000);
 	gpio_direction_output(EXT_SPK_AMP_GPIO, 1);
 	usleep_range(13000, 15000);
 
-	for (i = 0; i < 1; i++) {
+	for (i = 0; i < 5; i++) {
 		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
-		usleep_range(13000, 15000);
+		usleep_range(100, 105);
 		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 0);
-		usleep_range(3000, 5000);
+		usleep_range(100, 105);
 	}
 	gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
-	usleep_range(13000, 15000);
 
-	pr_info("%s: Enable external speaker PAs.\n", __func__);
+	pr_debug("%s: Enable external speaker PAs.\n", __func__);
 }
 
 static void msm8x16_ext_spk_delayed_dualmode(struct work_struct *work)
 {
-	int i;
+	int i = 0;
 
 	gpio_direction_output(EXT_SPK_AMP_HEADSET_GPIO, 1);
 	usleep_range(13000, 15000);
 	gpio_direction_output(EXT_SPK_AMP_GPIO, 1);
 	usleep_range(13000, 15000);
 
-	for (i = 0; i < 1; i++) {
+	for (i = 0; i < 5; i++) {
 		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
-		usleep_range(13000, 15000);
+		usleep_range(100, 105);
 		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 0);
-		usleep_range(3000, 5000);
+		usleep_range(100, 105);
 	}
 	gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
-	usleep_range(13000, 15000);
 
-	pr_info("%s: Enable external speaker PAs dualmode.\n", __func__);
+	pr_debug("%s: Enable external speaker PAs dualmode.\n", __func__);
 }
 #endif
 
@@ -674,8 +672,7 @@ static int lineout_status_put(struct snd_kcontrol *kcontrol,
 	case 0:
 		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 0);
 		usleep_range(3000, 5000);
-		gpio_direction_output(EXT_SPK_AMP_GPIO , 0);
-		usleep_range(3000, 5000);
+		gpio_direction_output(EXT_SPK_AMP_GPIO, 0);
 		break;
 	case 1:
 		schedule_delayed_work(&lineout_amp_enable, msecs_to_jiffies(100));
@@ -1794,6 +1791,9 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_ignore_suspend(dapm, "EAR");
 	snd_soc_dapm_ignore_suspend(dapm, "HEADPHONE");
 	snd_soc_dapm_ignore_suspend(dapm, "SPK_OUT");
+#ifdef CONFIG_MACH_WT88047
+	snd_soc_dapm_ignore_suspend(dapm, "SPK_EXTN_OUT");
+#endif
 	snd_soc_dapm_ignore_suspend(dapm, "AMIC1");
 	snd_soc_dapm_ignore_suspend(dapm, "AMIC2");
 	snd_soc_dapm_ignore_suspend(dapm, "AMIC3");

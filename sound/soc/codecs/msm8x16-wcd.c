@@ -2956,6 +2956,12 @@ static const struct snd_kcontrol_new hphr_mux[] = {
 	SOC_DAPM_ENUM_VIRT("HPHR", hph_enum)
 };
 
+#ifdef CONFIG_MACH_WT88047
+static const struct snd_kcontrol_new hphspk_mux[] = {
+	SOC_DAPM_ENUM_VIRT("HPH SPK", hph_enum)
+};
+#endif
+
 static const struct snd_kcontrol_new spkr_switch[] = {
 	SOC_DAPM_SINGLE("Switch",
 		MSM8X16_WCD_A_ANALOG_SPKR_DAC_CTL, 7, 1, 0)
@@ -4166,15 +4172,28 @@ static const struct snd_soc_dapm_route audio_map[] = {
 
 	{"HPHL PA", NULL, "HPHL"},
 	{"HPHR PA", NULL, "HPHR"},
+#ifdef CONFIG_MACH_WT88047
+	{"SPK EXTN PA", NULL, "HPH SPK"},
+#endif
 	{"HPHL", "Switch", "HPHL DAC"},
 	{"HPHR", "Switch", "HPHR DAC"},
+#ifdef CONFIG_MACH_WT88047
+	{"HPH SPK", "Switch", "HPHR DAC"},
+#endif
 	{"HPHL PA", NULL, "CP"},
 	{"HPHL PA", NULL, "RX_BIAS"},
+#ifdef CONFIG_MACH_WT88047
+	{"SPK EXTN PA", NULL, "CP"},
+	{"SPK EXTN PA", NULL, "RX_BIAS"},
+#endif
 	{"HPHR PA", NULL, "CP"},
 	{"HPHR PA", NULL, "RX_BIAS"},
 	{"HPHL DAC", NULL, "RX1 CHAIN"},
 
 	{"SPK_OUT", NULL, "SPK PA"},
+#ifdef CONFIG_MACH_WT88047
+	{"SPK_EXTN_OUT", NULL, "SPK EXTN PA"},
+#endif
 	{"SPK PA", NULL, "SPK_RX_BIAS"},
 	{"SPK PA", NULL, "SPK DAC"},
 	{"SPK DAC", "Switch", "RX3 CHAIN"},
@@ -4741,11 +4760,24 @@ static const struct snd_soc_dapm_widget msm8x16_wcd_dapm_widgets[] = {
 		SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
 		SND_SOC_DAPM_POST_PMD),
 
+#ifdef CONFIG_MACH_WT88047
+	SND_SOC_DAPM_VIRT_MUX("HPH SPK", SND_SOC_NOPM, 0, 0, hphspk_mux),
+
+	SND_SOC_DAPM_PGA_E("SPK EXTN PA", MSM8X16_WCD_A_ANALOG_RX_HPH_CNP_EN,
+		4, 0, NULL, 0,
+		msm8x16_wcd_hph_pa_event, SND_SOC_DAPM_PRE_PMU |
+		SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD |
+		SND_SOC_DAPM_POST_PMD),
+#endif
+
 	SND_SOC_DAPM_MIXER("SPK DAC", SND_SOC_NOPM, 0, 0,
 		spkr_switch, ARRAY_SIZE(spkr_switch)),
 
 	/* Speaker */
 	SND_SOC_DAPM_OUTPUT("SPK_OUT"),
+#ifdef CONFIG_MACH_WT88047
+	SND_SOC_DAPM_OUTPUT("SPK_EXTN_OUT"),
+#endif
 
 	SND_SOC_DAPM_PGA_E("SPK PA", MSM8X16_WCD_A_ANALOG_SPKR_DRV_CTL,
 			6, 0 , NULL, 0, msm8x16_wcd_codec_enable_spk_pa,
@@ -5128,6 +5160,10 @@ static struct regulator *wcd8x16_wcd_codec_find_regulator(
 
 static int msm8x16_wcd_device_down(struct snd_soc_codec *codec)
 {
+#ifdef CONFIG_MACH_WT88047
+	u8 state = 0;
+#endif
+
 	struct msm8916_asoc_mach_data *pdata = NULL;
 	struct msm8x16_wcd_priv *msm8x16_wcd_priv =
 		snd_soc_codec_get_drvdata(codec);
@@ -5180,8 +5216,17 @@ static int msm8x16_wcd_device_down(struct snd_soc_codec *codec)
 	/* 40ms to allow boost to discharge */
 	msleep(40);
 	/* Disable PA to avoid pop during codec bring up */
+#ifdef CONFIG_MACH_WT88047
+	state = gpio_get_value(EXT_SPK_AMP_GPIO);
+	pr_debug("%s external audio pa state: %d\n", __func__, state);
+	if (!state) {
+		snd_soc_update_bits(codec, MSM8X16_WCD_A_ANALOG_RX_HPH_CNP_EN,
+				0x30, 0x00);
+	}
+#else
 	snd_soc_update_bits(codec, MSM8X16_WCD_A_ANALOG_RX_HPH_CNP_EN,
 			0x30, 0x00);
+#endif
 	snd_soc_update_bits(codec, MSM8X16_WCD_A_ANALOG_SPKR_DRV_CTL,
 			0x80, 0x00);
 	msm8x16_wcd_write(codec,
