@@ -118,6 +118,7 @@
 
 	bq2022a {
 		compatible = "bq2022a";
+		qcom,bq2022a-id-gpio = <&pm8916_gpios 3 0>;
 		status= "okay";
 	};
 };
