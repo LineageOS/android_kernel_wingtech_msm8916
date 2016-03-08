@@ -35,7 +35,7 @@
                 };
 
                 secure_region@0 {
-                        status = "disabled";
+                        /* status = "disabled"; */
                 };
         };
 };
@@ -124,6 +124,16 @@
 };
 
 &pm8916_mpps {
+	mpp@a100 {
+		qcom,mode = <4>;
+		qcom,invert = <0>;
+		qcom,output-type = <0>;
+		qcom,vin-sel = <2>;
+		qcom,src-sel = <0>;
+		qcom,ain-route = <1>;
+		qcom,master-en = <1>;
+	};
+
 	mpp@a300 { /* MPP 4 */
 		/* Backlight PWM */
 		qcom,mode = <1>;		/* Digital output */
