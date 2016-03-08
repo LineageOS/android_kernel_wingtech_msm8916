@@ -25,7 +25,7 @@
 
 #include "yas_cfg.h"
 
-#define YAS_VERSION	"10.2.0d"	/*!< MS-x Driver Version */
+#define YAS_VERSION	"10.2.4"/*!< MS-x Driver Version */
 
 /* ----------------------------------------------------------------------------
  *                             Typedef definition
@@ -216,6 +216,8 @@
 #define YAS_TYPE_MAG YAS_TYPE_M_MAG
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537 /* MS-3T */
 #define YAS_TYPE_MAG YAS_TYPE_M_MAG
+#elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS539 /* MS-3S */
+#define YAS_TYPE_MAG YAS_TYPE_M_MAG
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS53x
 #define YAS_TYPE_MAG YAS_TYPE_AMG_MAG
 #endif
@@ -264,6 +266,21 @@
 /* ----------------------------------------------------------------------------
  *                      Extension Command Definition
  *--------------------------------------------------------------------------- */
+/*! YAS530 extension command: self test */
+#define YAS530_SELF_TEST		(0x00000001)
+/*! YAS530 extension command: self test noise */
+#define YAS530_SELF_TEST_NOISE		(0x00000002)
+/*! YAS530 extension command: obtains the hardware offset */
+#define YAS530_GET_HW_OFFSET		(0x00000003)
+/*! YAS530 extension command: sets the hardware offset */
+#define YAS530_SET_HW_OFFSET		(0x00000004)
+/*! YAS530 extension command: obtains last raw data (x, y1, y2, t) */
+#define YAS530_GET_LAST_RAWDATA		(0x00000006)
+/*! YAS530 extension command: obtains the ellipsoidal correction matrix */
+#define YAS530_GET_STATIC_MATRIX	(0x00000007)
+/*! YAS530 extension command: sets the ellipsoidal correction matrix */
+#define YAS530_SET_STATIC_MATRIX	(0x00000008)
+
 /*! YAS532 extension command: self test */
 #define YAS532_SELF_TEST		(0x00000001)
 /*! YAS532 extension command: self test noise */
@@ -274,6 +291,14 @@
 #define YAS532_SET_HW_OFFSET		(0x00000004)
 /*! YAS532 extension command: obtains last raw data (x, y1, y2, t) */
 #define YAS532_GET_LAST_RAWDATA		(0x00000006)
+/*! YAS532 extension command: sets the interrupt enable */
+#define YAS532_SET_INTERRUPT_ENABLE	(0x00000007)
+/*! YAS532 extension command: sets the interrupt active HIGH */
+#define YAS532_SET_INTERRUPT_ACTIVE_HIGH (0x00000008)
+/*! YAS532 extension command: obtains the ellipsoidal correction matrix */
+#define YAS532_GET_STATIC_MATRIX	(0x00000009)
+/*! YAS532 extension command: sets the ellipsoidal correction matrix */
+#define YAS532_SET_STATIC_MATRIX	(0x0000000a)
 
 /*! YAS535 extension command: obtains last raw data (xy1y2[3] t xyz[3]) */
 #define YAS535_GET_LAST_RAWDATA		(0x00000001)
@@ -319,6 +344,26 @@
 #define YAS537_SET_AVERAGE_SAMPLE	(0x00000005)
 /*! YAS537 extension command: obtains the hardware offset */
 #define YAS537_GET_HW_OFFSET		(0x00000006)
+/*! YAS537 extension command: obtains the ellipsoidal correction matrix */
+#define YAS537_GET_STATIC_MATRIX	(0x00000007)
+/*! YAS537 extension command: sets the ellipsoidal correction matrix */
+#define YAS537_SET_STATIC_MATRIX	(0x00000008)
+/*! YAS537 extension command: obtains the overflow and underflow threshold */
+#define YAS537_GET_OUFLOW_THRESH	(0x00000009)
+
+
+/*! YAS539 extension command: self test */
+#define YAS539_SELF_TEST		(0x00000001)
+/*! YAS539 extension command: self test noise */
+#define YAS539_SELF_TEST_NOISE		(0x00000002)
+/*! YAS539 extension command: obtains last raw data (x, y1, y2, t) */
+#define YAS539_GET_LAST_RAWDATA		(0x00000003)
+/*! YAS539 extension command: obtains the average samples */
+#define YAS539_GET_AVERAGE_SAMPLE	(0x00000004)
+/*! YAS539 extension command: sets the average samples */
+#define YAS539_SET_AVERAGE_SAMPLE	(0x00000005)
+/*! YAS539 extension command: obtains the hardware offset */
+#define YAS539_GET_HW_OFFSET		(0x00000006)
 
 /* ----------------------------------------------------------------------------
  *                            Structure definition
@@ -898,7 +943,7 @@ struct yas_acc_mag_gyro_driver {
  */
 struct yas_mag_filter_config {
 	uint8_t len; /*!< Filter length */
-	uint16_t noise[3]; /*!< Filter noise X, Y, Z in [nT] */
+	uint16_t noise; /*!< Filter noise X, Y, Z in [nT] */
 	uint16_t threshold; /*!< Filter threshold in [nT] */
 };
 
@@ -991,7 +1036,7 @@ struct yas_mag_calib_result {
 	struct yas_vector offset; /*!< Calibration offset [nT] */
 	uint16_t spread; /*!< Spread value */
 	uint16_t variation; /*!< Variation value */
-	uint16_t radius; /*!< Magnetic radius [nT] */
+	uint32_t radius; /*!< Magnetic radius [nT] */
 	uint8_t axis; /*!< Update axis */
 	uint8_t accuracy; /*!< Accuracy [0-3] */
 	uint8_t level; /*!< The number of sample */
@@ -1218,7 +1263,7 @@ struct yas_mag_avg_config {
 struct yas_mag_avg_result {
 	int32_t tap_new; /*!< New average filter taps
 			    (0:32, 1:64, 2:128, 3:256) */
-	int32_t dm;	/*!< Median standard deviation */
+	int32_t dm; /*!< Median standard deviation */
 };
 
 /**
@@ -1643,6 +1688,78 @@ struct yas_swgyro {
 };
 #endif
 
+#if YAS_ATTITUDE_FILTER_ENABLE
+
+struct yas_attitude_filter_result {
+	struct yas_quaternion quaternion;
+	struct yas_vector gravity; /*!< Gravity [um/s^2] */
+	struct yas_vector linear_acceleration; /*!< Linear acceleration
+						 [um/s^2] */
+};
+
+/**
+ * @struct yas_attitude_filter_config
+ * @brief Attitude-filter config
+ */
+struct yas_attitude_filter_config {
+	int32_t dt;
+	int32_t gamma;
+};
+
+/**
+ * @struct yas_attitude_filter
+ * @brief Attitude-filter.
+ */
+struct yas_attitude_filter {
+	/**
+	 * Initializes the attitude_filter.
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*init)(void);
+	/**
+	 * Terminates the attitude-filter.
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*term)(void);
+	/**
+	 * Resets the attitude-filter.
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*reset)(void);
+	/**
+	 * Updates the attitude-filter.
+	 * @param[in] data Magnetometer and Accelerometer data.
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*update)(struct yas_data *data, int num);
+	/**
+	 * Gets a configuration parameter.
+	 * @param[out] c A pointer to the configuration parameter.
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*get_config)(struct yas_attitude_filter_config *c);
+	/**
+	 * Sets a configuration parameter.
+	 * @param[in] c A pointer to the configuration parameter.
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*set_config)(const struct yas_attitude_filter_config *c);
+	/**
+	 * Gets the last result of attitude-filter.
+	 * @param[out] r Result.
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*get_result)(struct yas_attitude_filter_result *r);
+};
+#endif
+
 #if YAS_LOG_ENABLE
 
 /**
@@ -1673,7 +1790,18 @@ struct yas_log {
 };
 #endif
 
-#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532
+#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS530
+struct yas530_self_test_result {
+	int32_t id;
+	int8_t xy1y2[3];
+	int32_t dir;
+	int32_t sx, sy;
+	int32_t xyz[3];
+};
+#endif
+
+#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 \
+	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533
 struct yas532_self_test_result {
 	int32_t id;
 	int8_t xy1y2[3];
@@ -1685,6 +1813,15 @@ struct yas532_self_test_result {
 
 #if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
 struct yas537_self_test_result {
+	int32_t id;
+	int32_t dir;
+	int32_t sx, sy;
+	int32_t xyz[3];
+};
+#endif
+
+#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS539
+struct yas539_self_test_result {
 	int32_t id;
 	int32_t dir;
 	int32_t sx, sy;
@@ -1845,6 +1982,16 @@ int yas_sfm_init(struct yas_sfm *f);
  * @retval Negative Number Error
  */
 int yas_swgyro_init(struct yas_swgyro *f);
+#endif
+
+#if YAS_ATTITUDE_FILTER_ENABLE
+/**
+ * Initializes the filtered-attutde module.
+ * @param[in,out] f Pointer to yas_attitude_filter struct
+ * @retval #YAS_NO_ERROR Success
+ * @retval Negative Number Error
+ */
+int yas_attitude_filter_init(struct yas_attitude_filter *f);
 #endif
 
 #ifdef __cplusplus
