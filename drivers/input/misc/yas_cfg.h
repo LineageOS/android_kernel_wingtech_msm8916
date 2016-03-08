@@ -30,6 +30,7 @@
 #define YAS_MAG_DRIVER_YAS535			(5) /*!< YAS 535 (MS-6C) */
 #define YAS_MAG_DRIVER_YAS536			(6) /*!< YAS 536 (MS-3W) */
 #define YAS_MAG_DRIVER_YAS537			(7) /*!< YAS 537 (MS-3T) */
+#define YAS_MAG_DRIVER_YAS539			(8) /*!< YAS 539 (MS-3S) */
 #define YAS_MAG_DRIVER_YAS53x			(0x7fff) /*!< YAS XXX */
 
 #define YAS_ACC_DRIVER_NONE			(0) /*!< No Accelerometer */
@@ -84,6 +85,11 @@
 #define YAS_MAG_DRIVER				(YAS_MAG_DRIVER_YAS537)
 #define YAS_GYRO_DRIVER				(YAS_GYRO_DRIVER_BMI055)
 
+/*! Magnetic driver interrupt enable (0:Disable, 1: Enable) */
+#define YAS_MAG_DRIVER_INTERRUPT_ENABLE		(0)
+/*! Magnetic driver interrupt active HIGH (0:active LOW, 1: active HIGH) */
+#define YAS_MAG_DRIVER_ACTIVE_HIGH		(0)
+
 /*! Magnetic minimum calibration enable (0:Disable, 1: Enable) */
 #define YAS_MAG_CALIB_MINI_ENABLE		(0)
 /*! Magnetic floating point calibration enable (0:Disable, 1: Enable) */
@@ -94,6 +100,7 @@
 #define YAS_MAG_CALIB_ELLIPSOID_ENABLE		(1)
 /*! Magnetic calibration with gyroscope enable (0:Disable, 1: Enable) */
 #define YAS_MAG_CALIB_WITH_GYRO_ENABLE		(1)
+
 #if YAS_MAG_CALIB_MINI_ENABLE
 #undef YAS_MAG_CALIB_FLOAT_ENABLE
 #undef YAS_MAG_CALIB_SPHERE_ENABLE
@@ -127,11 +134,13 @@
 /*! Magnetic average filter enable (0:Disable, 1:Enable) */
 #define YAS_MAG_AVERAGE_FILTER_ENABLE		(0)
 /*! step counter enable (0:Disable, 1:Enable) */
-#define YAS_STEPCOUNTER_ENABLE			(1)
+#define YAS_STEPCOUNTER_ENABLE			(0)
 /*! Significant motion enable (0:Disable, 1:Enable) */
-#define YAS_SIGNIFICANT_MOTION_ENABLE		(1)
+#define YAS_SIGNIFICANT_MOTION_ENABLE		(0)
 /*! Software gyroscope enable (0:Disable, 1:Enable) */
-#define YAS_SOFTWARE_GYROSCOPE_ENABLE		(1)
+#define YAS_SOFTWARE_GYROSCOPE_ENABLE		(0)
+/* Acc and Mag 6 Axis attitude filter enable (0: Disable, 1: Enable) */
+#define YAS_ATTITUDE_FILTER_ENABLE		(0)
 /*! Log enable (0:Disable, 1:Enable) */
 #define YAS_LOG_ENABLE				(0)
 /*! Orientation enable (0:Disable, 1:Enable) */
@@ -153,12 +162,8 @@
  *                      Geomagnetic Filter Configuration
  *--------------------------------------------------------------------------- */
 
-/*! Geomagnetic adaptive filter noise threshold X (dispersion in [nT]) */
-#define YAS_MAG_DEFAULT_FILTER_NOISE_X		(1200)
-/*! Geomagnetic adaptive filter noise threshold Y (dispersion in [nT]) */
-#define YAS_MAG_DEFAULT_FILTER_NOISE_Y		(1200)
-/*! Geomagnetic adaptive filter noise threshold Z (dispersion in [nT]) */
-#define YAS_MAG_DEFAULT_FILTER_NOISE_Z		(1200)
+/*! Geomagnetic adaptive filter noise threshold (dispersion in [nT]) */
+#define YAS_MAG_DEFAULT_FILTER_NOISE		(1800)
 /*! Geomagnetic adaptive filter length */
 #define YAS_MAG_DEFAULT_FILTER_LEN		(20)
 /*! Geomagnetic threshold filter threshold in [nT] */

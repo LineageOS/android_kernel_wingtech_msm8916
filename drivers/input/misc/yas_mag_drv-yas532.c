@@ -19,7 +19,6 @@
  */
 
 #include "yas.h"
-#include <linux/kernel.h>
 
 #if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 \
 	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533
@@ -43,7 +42,7 @@
 #define YAS532_DATA_CENTER		(4096)
 #define YAS532_DATA_UNDERFLOW		(0)
 #define YAS532_DATA_OVERFLOW		(8190)
-#define YAS532_DEVICE_ID		(0x02)	/* YAS532 (MS-3R/3F) */
+#define YAS532_DEVICE_ID		(0x02) /* YAS532 (MS-3R/3F) */
 #define YAS532_TEMP20DEGREE_TYPICAL	(390)
 
 #define YAS_X_OVERFLOW			(0x01)
@@ -58,7 +57,7 @@
 #define YAS532_MAG_STATE_NORMAL		(0)
 #define YAS532_MAG_STATE_INIT_COIL	(1)
 #define YAS532_MAG_STATE_MEASURE_OFFSET	(2)
-#define YAS532_MAG_INITCOIL_TIMEOUT	(1000)	/* msec */
+#define YAS532_MAG_INITCOIL_TIMEOUT	(1000) /* msec */
 #define YAS532_MAG_TEMPERATURE_LOG	(10)
 #define YAS532_MAG_NOTRANS_POSITION	(3)
 #if YAS532_DRIVER_NO_SLEEP
@@ -77,7 +76,7 @@ struct yas_cal_data {
 	int32_t cx, cy1, cy2;
 	int32_t a2, a3, a4, a5, a6, a7, a8, a9, k;
 };
-#if (1 < YAS532_MAG_TEMPERATURE_LOG)
+#if 1 < YAS532_MAG_TEMPERATURE_LOG
 struct yas_temperature_filter {
 	uint16_t log[YAS532_MAG_TEMPERATURE_LOG];
 	int num;
@@ -98,7 +97,7 @@ struct yas_cdriver {
 	int enable;
 	uint8_t dev_id;
 	const int8_t *transform;
-#if (1 < YAS532_MAG_TEMPERATURE_LOG)
+#if 1 < YAS532_MAG_TEMPERATURE_LOG
 	struct yas_temperature_filter t;
 #endif
 	uint32_t current_time;
@@ -107,11 +106,14 @@ struct yas_cdriver {
 	int start_flag;
 	int wait_flag;
 #endif
+	struct yas_matrix static_matrix;
 };
 
 static const int yas532_version_ac_coef[] = {YAS532_VERSION_AC_COEF_X,
 	YAS532_VERSION_AC_COEF_Y1, YAS532_VERSION_AC_COEF_Y2};
 static const int8_t INVALID_OFFSET[] = {0x7f, 0x7f, 0x7f};
+static const struct yas_matrix no_conversion
+	= { {10000, 0, 0, 0, 10000, 0, 0, 0, 10000} };
 static const int8_t YAS532_TRANSFORMATION[][9] = {
 	{ 0,  1,  0, -1,  0,  0,  0,  0,  1 },
 	{-1,  0,  0,  0, -1,  0,  0,  0,  1 },
@@ -129,6 +131,20 @@ static struct yas_cdriver driver;
 static int yas_single_write(uint8_t addr, uint8_t data)
 {
 	return driver.cbk.device_write(YAS_TYPE_MAG, addr, &data, 1);
+}
+
+static void apply_matrix(struct yas_vector *xyz, struct yas_matrix *m)
+{
+	int32_t tmp[3];
+	int i;
+	if (m == NULL)
+		return;
+	for (i = 0; i < 3; i++)
+		tmp[i] = ((m->m[i*3]/10) * (xyz->v[0]/10)
+				+ (m->m[i*3+1]/10) * (xyz->v[1]/10)
+				+ (m->m[i*3+2]/10) * (xyz->v[2]/10)) / 100;
+	for (i = 0; i < 3; i++)
+		xyz->v[i] = tmp[i];
 }
 
 static uint32_t curtime(void)
@@ -340,9 +356,6 @@ static int yas_get_position(void)
 {
 	if (!driver.initialized)
 		return YAS_ERROR_INITIALIZE;
-    
-    printk("%s, position = %d\n", __func__, driver.position);
-    
 	return driver.position;
 }
 
@@ -352,9 +365,6 @@ static int yas_set_position(int position)
 		return YAS_ERROR_INITIALIZE;
 	if (position < 0 || 7 < position)
 		return YAS_ERROR_ARG;
-
-    printk("%s, position = %d\n", __func__, position);
-    
 	if (position == YAS532_MAG_NOTRANS_POSITION)
 		driver.transform = NULL;
 	else
@@ -397,7 +407,7 @@ static int yas_measure(struct yas_data *data, int num, int temp_correction,
 	uint16_t t, xy1y2[3];
 	uint32_t tm;
 	int rt;
-#if (1 < YAS532_MAG_TEMPERATURE_LOG)
+#if 1 < YAS532_MAG_TEMPERATURE_LOG
 	int32_t sum = 0;
 #endif
 	*ouflow = 0;
@@ -435,7 +445,7 @@ static int yas_measure(struct yas_data *data, int num, int temp_correction,
 	if (measure_normal_yas532(0, 0, &busy, &t, xy1y2, ouflow) < 0)
 		return YAS_ERROR_DEVICE_COMMUNICATION;
 	xy1y2_to_linear(xy1y2, xy1y2_linear);
-#if (1 < YAS532_MAG_TEMPERATURE_LOG)
+#if 1 < YAS532_MAG_TEMPERATURE_LOG
 	driver.t.log[driver.t.idx++] = t;
 	if (YAS532_MAG_TEMPERATURE_LOG <= driver.t.idx)
 		driver.t.idx = 0;
@@ -469,6 +479,7 @@ static int yas_measure(struct yas_data *data, int num, int temp_correction,
 		}
 		set_vector(data->xyz.v, xyz_tmp);
 	}
+	apply_matrix(&data->xyz, &driver.static_matrix);
 	for (i = 0; i < 3; i++) {
 		data->xyz.v[i] -= data->xyz.v[i] % 10;
 		if (*ouflow & (1<<(i*2)))
@@ -581,12 +592,12 @@ static int yas_ext(int32_t cmd, void *p)
 	struct yas532_self_test_result *r;
 	struct yas_data data;
 	int32_t xy1y2_linear[3], *raw_xyz;
+	int16_t *m;
 	int rt, i, enable, ouflow, position;
 	if (!driver.initialized)
 		return YAS_ERROR_INITIALIZE;
 	if (p == NULL)
 		return YAS_ERROR_ARG;
-
 	switch (cmd) {
 	case YAS532_SELF_TEST:
 		r = (struct yas532_self_test_result *) p;
@@ -708,6 +719,16 @@ static int yas_ext(int32_t cmd, void *p)
 		for (i = 0; i < 4; i++)
 			((uint16_t *) p)[i] = driver.last_raw[i];
 		return YAS_NO_ERROR;
+	case YAS532_GET_STATIC_MATRIX:
+		m = (int16_t *) p;
+		for (i = 0; i < 9; i++)
+			m[i] = driver.static_matrix.m[i];
+		return YAS_NO_ERROR;
+	case YAS532_SET_STATIC_MATRIX:
+		m = (int16_t *) p;
+		for (i = 0; i < 9; i++)
+			driver.static_matrix.m[i] = m[i];
+		return YAS_NO_ERROR;
 	default:
 		break;
 	}
@@ -750,7 +771,7 @@ static int yas_init(void)
 	driver.start_flag = 0;
 	driver.wait_flag = 0;
 #endif
-#if (1 < YAS532_MAG_TEMPERATURE_LOG)
+#if 1 < YAS532_MAG_TEMPERATURE_LOG
 	driver.t.num = driver.t.idx = 0;
 #endif
 	driver.current_time = curtime();
@@ -759,6 +780,7 @@ static int yas_init(void)
 		driver.last_raw[i] = 0;
 	}
 	driver.last_raw[3] = 0;
+	driver.static_matrix = no_conversion;
 	driver.initialized = 1;
 	return YAS_NO_ERROR;
 }
