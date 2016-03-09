@@ -31,6 +31,7 @@
 #include <linux/debugfs.h>
 #include <linux/sensors.h>
 #include <linux/input/ft5x06_ts.h>
+#include <linux/power_supply.h>
 
 #if defined(CONFIG_FB)
 #include <linux/notifier.h>
@@ -237,6 +238,17 @@ enum {
 				fw_sub_min)
 
 #define FT_DEBUG_DIR_NAME	"ts_debug"
+
+#ifdef CONFIG_MACH_WT88047
+#define CTP_CHARGER_DETECT 1
+#endif
+
+#if CTP_CHARGER_DETECT
+extern int power_supply_get_battery_charge_state(struct power_supply *psy);
+struct power_supply *batt_psy;
+static u8 is_charger_plug;
+static u8 pre_charger_status;
+#endif
 
 struct ft5x06_ts_data {
 	struct i2c_client *client;
@@ -698,6 +710,21 @@ static irqreturn_t ft5x06_ts_interrupt(int irq, void *dev_id)
 		return IRQ_HANDLED;
 	}
 
+#if CTP_CHARGER_DETECT
+	if (!batt_psy) {
+		pr_err("%s: tp interrupt battery supply not found\n", __func__);
+		batt_psy = power_supply_get_by_name("usb");
+	} else {
+		is_charger_plug = (u8)power_supply_get_battery_charge_state(batt_psy);
+		pr_debug("%s: 1 is_charger_plug %d, prev %d", __func__, is_charger_plug, pre_charger_status);
+		if (is_charger_plug != pre_charger_status) {
+			pre_charger_status = is_charger_plug;
+			ft5x0x_write_reg(data->client, 0x8B, is_charger_plug);
+			pr_debug("%s: 2 is_charger_plug %d, prev %d", __func__, is_charger_plug, pre_charger_status);
+		}
+	}
+#endif
+
 	ip_dev = data->input_dev;
 	buf = data->tch_data;
 
@@ -1063,6 +1090,17 @@ static int ft5x06_ts_start(struct device *dev)
 	msleep(data->pdata->soft_rst_dly);
 
 	enable_irq(data->client->irq);
+#if CTP_CHARGER_DETECT
+	batt_psy = power_supply_get_by_name("usb");
+	if (!batt_psy) {
+		pr_err("%s: tp resume battery supply not found\n", __func__);
+	} else {
+		is_charger_plug = (u8)power_supply_get_battery_charge_state(batt_psy);
+		pr_debug("%s: is_charger_plug %d, prev %d", __func__, is_charger_plug, pre_charger_status);
+		ft5x0x_write_reg(data->client, 0x8B, is_charger_plug);
+	}
+	pre_charger_status = is_charger_plug;
+#endif
 	data->suspended = false;
 
 	return 0;
@@ -2464,6 +2502,12 @@ static int ft5x06_ts_probe(struct i2c_client *client,
 	data->early_suspend.suspend = ft5x06_ts_early_suspend;
 	data->early_suspend.resume = ft5x06_ts_late_resume;
 	register_early_suspend(&data->early_suspend);
+#endif
+
+#if CTP_CHARGER_DETECT
+	batt_psy = power_supply_get_by_name("usb");
+	if (!batt_psy)
+		pr_err("%s: tp battery supply not found\n", __func__);
 #endif
 
 	return 0;
