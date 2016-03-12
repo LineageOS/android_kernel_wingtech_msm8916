@@ -277,7 +277,9 @@ int power_supply_get_battery_charge_state(struct power_supply *psy)
 		return 0;
 	}
 
-	psy->get_property(psy, POWER_SUPPLY_PROP_ONLINE, &ret);
+	if (psy->get_property)
+		psy->get_property(psy, POWER_SUPPLY_PROP_ONLINE, &ret);
+
 	pr_debug("%s: online: %d\n", __func__, ret.intval);
 
 	return ret.intval;
