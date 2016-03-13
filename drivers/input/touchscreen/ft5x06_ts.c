@@ -240,7 +240,7 @@ enum {
 #define FT_DEBUG_DIR_NAME	"ts_debug"
 
 #ifdef CONFIG_MACH_WT88047
-#define CTP_CHARGER_DETECT 1
+#define CTP_CHARGER_DETECT 0
 #endif
 
 #if CTP_CHARGER_DETECT
