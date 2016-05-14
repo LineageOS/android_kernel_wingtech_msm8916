@@ -3053,9 +3053,7 @@ eHalStatus hdd_RoamTdlsStatusUpdateHandler(hdd_adapter_t *pAdapter,
                     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_WARN,
                                    ("HDD: del STA IDX = %x"), pRoamInfo->staId) ;
 
-                    mutex_lock(&pHddCtx->tdls_lock);
-                    curr_peer = wlan_hdd_tdls_find_peer(pAdapter,
-                                                  pRoamInfo->peerMac, FALSE);
+                    curr_peer = wlan_hdd_tdls_find_peer(pAdapter, pRoamInfo->peerMac, TRUE);
                     if (NULL != curr_peer)
                     {
                        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
@@ -3064,17 +3062,10 @@ eHalStatus hdd_RoamTdlsStatusUpdateHandler(hdd_adapter_t *pAdapter,
                        if (TDLS_IS_CONNECTED(curr_peer) ||
                           (eTDLS_LINK_CONNECTING == curr_peer->link_status))
                        {
-                           mutex_unlock(&pHddCtx->tdls_lock);
                            hdd_roamDeregisterTDLSSTA ( pAdapter, pRoamInfo->staId );
                        }
-                       else
-                           mutex_unlock(&pHddCtx->tdls_lock);
-
                        wlan_hdd_tdls_decrement_peer_count(pAdapter);
                     }
-                    else
-                        mutex_unlock(&pHddCtx->tdls_lock);
-
                     wlan_hdd_tdls_reset_peer(pAdapter, pRoamInfo->peerMac);
 
                     pHddCtx->tdlsConnInfo[staIdx].staId = 0 ;
@@ -3097,11 +3088,8 @@ eHalStatus hdd_RoamTdlsStatusUpdateHandler(hdd_adapter_t *pAdapter,
                        __func__, pRoamInfo->reasonCode);
 
 #ifdef CONFIG_TDLS_IMPLICIT
-            mutex_lock(&pHddCtx->tdls_lock);
-            curr_peer = wlan_hdd_tdls_find_peer(pAdapter, pRoamInfo->peerMac,
-                                                FALSE);
+            curr_peer = wlan_hdd_tdls_find_peer(pAdapter, pRoamInfo->peerMac, TRUE);
             wlan_hdd_tdls_indicate_teardown(pAdapter, curr_peer, pRoamInfo->reasonCode);
-            mutex_unlock(&pHddCtx->tdls_lock);
 #endif
             status = eHAL_STATUS_SUCCESS ;
             break ;

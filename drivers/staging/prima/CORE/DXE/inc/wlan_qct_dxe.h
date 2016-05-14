@@ -442,25 +442,6 @@ void WLANDXE_ChannelDebug
    wpt_uint8      debugFlags
 );
 
-/*==========================================================================
-  @  Function Name
-    WLANDXE_KickDxe
-
-  @  Description
-    Kick Dxe when HDD TX timeout happen
-
-  @  Parameters
-    NONE
-
-  @  Return
-    NONE
-
-===========================================================================*/
-void WLANDXE_KickDxe
-(
-   void
-);
-
 wpt_uint32 WLANDXE_SetupLogTransfer
 (
    wpt_uint64 bufferAddr,
