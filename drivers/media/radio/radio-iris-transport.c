@@ -210,6 +210,10 @@ void radio_hci_smd_deregister(void)
 static void radio_hci_smd_deregister(void)
 #endif
 {
+	radio_hci_unregister_dev(hs.hdev);
+	kfree(hs.hdev);
+	hs.hdev = NULL;
+
 	smd_close(hs.fm_channel);
 	hs.fm_channel = 0;
 #ifdef CONFIG_RADIO_IRIS_TRANSPORT_NO_FIRMWARE

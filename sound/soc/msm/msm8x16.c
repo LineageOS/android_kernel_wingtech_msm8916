@@ -1741,7 +1741,18 @@ static void *def_msm8x16_wcd_mbhc_cal(void)
 	 * 210-290 == Button 2
 	 * 360-680 == Button 3
 	 */
-#ifdef CONFIG_MACH_WT88047
+#if defined CONFIG_MACH_JALEBI
+	btn_low[0] = 0;
+	btn_high[0] = 150;
+	btn_low[1] = 150;
+	btn_high[1] = 150;
+	btn_low[2] = 150;
+	btn_high[2] = 150;
+	btn_low[3] = 150;
+	btn_high[3] = 150;
+	btn_low[4] = 150;
+	btn_high[4] = 150;
+#elif defined CONFIG_MACH_WT88047
 	btn_low[0] = 75;
 	btn_high[0] = 75;
 	btn_low[1] = 130;
@@ -1831,6 +1842,9 @@ static int msm_audrx_init_wcd(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_codec *codec = rtd->codec;
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	struct snd_card *card;
+	struct snd_info_entry *entry;
+	struct msm8916_asoc_mach_data *pdata = snd_soc_card_get_drvdata(rtd->card);
 	int ret = 0;
 
 	pr_debug("%s: dev_name%s\n", __func__, dev_name(cpu_dai->dev));
@@ -1862,6 +1876,20 @@ static int msm_audrx_init_wcd(struct snd_soc_pcm_runtime *rtd)
 		ret = tasha_mbhc_hs_detect(codec, &wcd_mbhc_cfg);
 	else
 		ret = -ENOMEM;
+
+	card = rtd->card->snd_card;
+	entry = snd_register_module_info(card->module,
+						"codecs",
+						card->proc_root);
+	if (!entry) {
+		pr_debug("%s: Cannot create codecs module entry\n",
+			__func__);
+		return 0;
+	}
+	pdata->codec_root = entry;
+	tasha_codec_info_create_codec_entry(pdata->codec_root,
+							codec);
+
 	return ret;
 }
 
@@ -2710,12 +2738,34 @@ static bool msm8x16_swap_gnd_mic(struct snd_soc_codec *codec)
 
 	return true;
 }
+#ifdef CONFIG_MACH_JALEBI
+static int msm8x16_ext_spk_pa_init(struct platform_device *pdev,
+		struct msm8916_asoc_mach_data *pdata)
+{
+	int ret = 0;
 
+	pdata->ext_spk_amp_gpio = of_get_named_gpio(pdev->dev.of_node,
+		"qcom,ext-spk-amp-gpio", 0);
+	if (gpio_is_valid(pdata->ext_spk_amp_gpio)) {
+		ret = gpio_request(pdata->ext_spk_amp_gpio, "ext_spk_amp_gpio");
+		if (ret) {
+			pr_err("%s: gpio_request failed for ext_spk_amp_gpio.\n",
+				__func__);
+			return -EINVAL;
+		}
+		gpio_direction_output(pdata->ext_spk_amp_gpio, 0);
+	}
+	return 0;
+}
+#endif
 static int msm8x16_setup_hs_jack(struct platform_device *pdev,
 			struct msm8916_asoc_mach_data *pdata)
 {
 	struct pinctrl *pinctrl;
 
+#ifdef CONFIG_MACH_JALEBI
+	msm8x16_ext_spk_pa_init(pdev, pdata);
+#endif
 	pdata->us_euro_gpio = of_get_named_gpio(pdev->dev.of_node,
 					"qcom,cdc-us-euro-gpios", 0);
 	if (pdata->us_euro_gpio < 0) {
@@ -3316,6 +3366,10 @@ static int msm8x16_asoc_machine_remove(struct platform_device *pdev)
 		iounmap(pdata->vaddr_gpio_mux_spkr_ctl);
 	if (pdata->vaddr_gpio_mux_mic_ctl)
 		iounmap(pdata->vaddr_gpio_mux_mic_ctl);
+#ifdef CONFIG_MACH_JALEBI
+	if (gpio_is_valid(pdata->ext_spk_amp_gpio))
+		gpio_free(pdata->ext_spk_amp_gpio);
+#endif
 	if (pdata->vaddr_gpio_mux_pcm_ctl)
 		iounmap(pdata->vaddr_gpio_mux_pcm_ctl);
 #ifdef CONFIG_MACH_WT88047
