@@ -40,6 +40,7 @@ struct radio_data {
 struct radio_data hs;
 static DEFINE_MUTEX(fm_smd_enable);
 static int fmsmd_set = 0;
+static int fmsmd_reg = 0;
 static int hcismd_fm_set_enable(const char *val, struct kernel_param *kp);
 module_param_call(fmsmd_set, hcismd_fm_set_enable, NULL, &fmsmd_set, 0644);
 static struct work_struct *reset_worker;
@@ -165,6 +166,11 @@ static int radio_hci_smd_register_dev(struct radio_data *hsmd)
 	struct radio_hci_dev *hdev;
 	int rc;
 
+	if (fmsmd_reg) {
+		FMDERR("Device already registered\n");
+		return 0;
+	}
+
 	if (hsmd == NULL)
 		return -ENODEV;
 
@@ -200,12 +206,18 @@ static int radio_hci_smd_register_dev(struct radio_data *hsmd)
 		return -ENODEV;
 	}
 
+	fmsmd_reg = 1;
 	return 0;
 }
 
 static void radio_hci_smd_deregister(void)
 {
 	struct radio_data *hsmd = &hs;
+
+	if (fmsmd_reg == 0) {
+		FMDERR("Device not registered, no need to deregister\n");
+		return;
+	}
 
 	if (hsmd == NULL)
 		goto done;
@@ -219,6 +231,7 @@ static void radio_hci_smd_deregister(void)
 	smd_close(hs.fm_channel);
 	hs.fm_channel = 0;
 done:
+	fmsmd_reg = 0;
 	fmsmd_set = 0;
 }
 
