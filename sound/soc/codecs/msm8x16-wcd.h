@@ -56,12 +56,6 @@
 #define DEFAULT_GAIN 9
 #define DEFAULT_OFFSET 100
 
-#ifdef CONFIG_MACH_WT88047
-#define EXT_SPK_AMP_GPIO (902 + 118)
-#define EXT_SPK_AMP_GPIO_1 (902 + 117)
-#define EXT_SPK_AMP_HEADSET_GPIO (902 + 8)
-#endif
-
 extern const u8 msm8x16_wcd_reg_readable[MSM8X16_WCD_CACHE_SIZE];
 extern const u8 msm8x16_wcd_reg_readonly[MSM8X16_WCD_CACHE_SIZE];
 extern const u8 msm8x16_wcd_reset_reg_defaults[MSM8X16_WCD_CACHE_SIZE];
@@ -322,6 +316,9 @@ extern int msm8x16_wcd_hs_detect(struct snd_soc_codec *codec,
 
 extern void msm8x16_wcd_hs_detect_exit(struct snd_soc_codec *codec);
 
+#ifdef CONFIG_MACH_WT88047
+extern int msm8x16_wcd_restart_mbhc(struct snd_soc_codec *codec);
+#endif
 extern void msm8x16_wcd_spk_ext_pa_cb(
 		int (*codec_spk_ext_pa)(struct snd_soc_codec *codec,
 		int enable), struct snd_soc_codec *codec);

@@ -66,6 +66,17 @@
 
 #define LPASS_CSR_GP_LPAIF_PRI_PCM_PRI_MODE_MUXSEL 0x07702008
 
+#ifdef CONFIG_MACH_WT88047
+#define EXT_CLASS_D_EN_DELAY 13000
+#define EXT_CLASS_D_DIS_DELAY 3000
+#define EXT_CLASS_D_DELAY_DELTA 2000
+
+#define AW8155A_MODE 5
+
+static struct delayed_work lineout_amp_enable;
+static struct delayed_work lineout_amp_dualmode;
+#endif
+
 #define MAX_AUX_CODECS	2
 
 enum btsco_rates {
@@ -365,81 +376,6 @@ static void param_set_mask(struct snd_pcm_hw_params *p, int n, unsigned bit)
 static int msm8x16_mclk_event(struct snd_soc_dapm_widget *w,
 			      struct snd_kcontrol *kcontrol, int event);
 
-#ifdef CONFIG_MACH_WT88047
-static struct delayed_work lineout_amp_enable;
-static struct delayed_work lineout_amp_dualmode;
-
-static void msm8x16_ext_spk_gpio_request(void)
-{
-	if (gpio_request(EXT_SPK_AMP_GPIO, "ext_spk_amp_gpio")) {
-		pr_err("%s: gpio_request failed for ext_spk_amp_gpio.\n", __func__);
-		return;
-	}
-
-	if (gpio_request(EXT_SPK_AMP_GPIO_1, "ext_spk_amp_gpio_1")) {
-		pr_err("%s: gpio_request failed for ext_spk_amp_gpio_1.\n", __func__);
-		return;
-	}
-
-	if (gpio_request(EXT_SPK_AMP_HEADSET_GPIO, "ext_spk_amp_headset_gpio")) {
-		pr_err("%s: gpio_request failed for ext_spk_amp_headset_gpio.\n", __func__);
-		return;
-	}
-}
-
-static void msm8x16_ext_spk_gpio_free(void)
-{
-	if (gpio_is_valid(EXT_SPK_AMP_GPIO))
-		gpio_free(EXT_SPK_AMP_GPIO);
-
-	if (gpio_is_valid(EXT_SPK_AMP_GPIO_1))
-		gpio_free(EXT_SPK_AMP_GPIO_1);
-
-	if (gpio_is_valid(EXT_SPK_AMP_HEADSET_GPIO))
-		gpio_free(EXT_SPK_AMP_HEADSET_GPIO);
-}
-
-static void msm8x16_ext_spk_delayed_enable(struct work_struct *work)
-{
-	int i = 0;
-
-	gpio_direction_output(EXT_SPK_AMP_HEADSET_GPIO, 0);
-	usleep_range(13000, 15000);
-	gpio_direction_output(EXT_SPK_AMP_GPIO, 1);
-	usleep_range(13000, 15000);
-
-	for (i = 0; i < 5; i++) {
-		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
-		usleep_range(100, 105);
-		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 0);
-		usleep_range(100, 105);
-	}
-	gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
-
-	pr_debug("%s: Enable external speaker PAs.\n", __func__);
-}
-
-static void msm8x16_ext_spk_delayed_dualmode(struct work_struct *work)
-{
-	int i = 0;
-
-	gpio_direction_output(EXT_SPK_AMP_HEADSET_GPIO, 1);
-	usleep_range(13000, 15000);
-	gpio_direction_output(EXT_SPK_AMP_GPIO, 1);
-	usleep_range(13000, 15000);
-
-	for (i = 0; i < 5; i++) {
-		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
-		usleep_range(100, 105);
-		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 0);
-		usleep_range(100, 105);
-	}
-	gpio_direction_output(EXT_SPK_AMP_GPIO_1, 1);
-
-	pr_debug("%s: Enable external speaker PAs dualmode.\n", __func__);
-}
-#endif
-
 static const struct snd_soc_dapm_widget msm8x16_dapm_widgets[] = {
 
 	SND_SOC_DAPM_SUPPLY_S("MCLK", -1, SND_SOC_NOPM, 0, 0,
@@ -577,6 +513,110 @@ static int mi2s_rx_bit_format_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#ifdef CONFIG_MACH_WT88047
+static void msm8x16_ext_spk_gpio_request(void)
+{
+	if (gpio_request(EXT_SPK_AMP_GPIO, "ext_spk_amp_gpio")) {
+		pr_err("%s: gpio_request failed for ext_spk_amp_gpio.\n", __func__);
+		return;
+	}
+
+	if (gpio_request(EXT_SPK_AMP_HEADSET_GPIO, "ext_spk_amp_headset_gpio")) {
+		pr_err("%s: gpio_request failed for ext_spk_amp_headset_gpio.\n", __func__);
+		return;
+	}
+}
+
+static void msm8x16_ext_spk_gpio_free(void)
+{
+	if (gpio_is_valid(EXT_SPK_AMP_GPIO))
+		gpio_free(EXT_SPK_AMP_GPIO);
+
+	if (gpio_is_valid(EXT_SPK_AMP_HEADSET_GPIO))
+		gpio_free(EXT_SPK_AMP_HEADSET_GPIO);
+}
+
+static void msm8x16_ext_spk_control(u32 enable)
+{
+	if (enable) {
+		gpio_direction_output(EXT_SPK_AMP_GPIO, enable);
+		usleep_range(EXT_CLASS_D_EN_DELAY,
+				EXT_CLASS_D_EN_DELAY + EXT_CLASS_D_DELAY_DELTA);
+	} else {
+		gpio_direction_output(EXT_SPK_AMP_GPIO, enable);
+		usleep_range(EXT_CLASS_D_DIS_DELAY,
+				EXT_CLASS_D_DIS_DELAY + EXT_CLASS_D_DELAY_DELTA);
+	}
+
+	pr_debug("%s: %s external speaker PAs.\n", __func__,
+			enable ? "Enable" : "Disable");
+}
+
+static void msm8x16_ext_spk_delayed_enable(struct work_struct *work)
+{
+	int i = 0;
+
+	gpio_direction_output(EXT_SPK_AMP_HEADSET_GPIO, false);
+	usleep_range(EXT_CLASS_D_EN_DELAY,
+			EXT_CLASS_D_EN_DELAY + EXT_CLASS_D_DELAY_DELTA);
+
+	for (i = 0; i < AW8155A_MODE; i++) {
+		gpio_direction_output(EXT_SPK_AMP_GPIO, false);
+		gpio_direction_output(EXT_SPK_AMP_GPIO, true);
+	}
+
+	usleep_range(EXT_CLASS_D_EN_DELAY,
+			EXT_CLASS_D_EN_DELAY + EXT_CLASS_D_DELAY_DELTA);
+}
+
+static void msm8x16_ext_spk_delayed_dualmode(struct work_struct *work)
+{
+	int i = 0;
+
+	gpio_direction_output(EXT_SPK_AMP_HEADSET_GPIO, true);
+	usleep_range(EXT_CLASS_D_EN_DELAY,
+			EXT_CLASS_D_EN_DELAY + EXT_CLASS_D_DELAY_DELTA);
+
+	for (i = 0; i < AW8155A_MODE; i++) {
+		gpio_direction_output(EXT_SPK_AMP_GPIO, false);
+		gpio_direction_output(EXT_SPK_AMP_GPIO, true);
+	}
+
+	usleep_range(EXT_CLASS_D_EN_DELAY,
+			EXT_CLASS_D_EN_DELAY + EXT_CLASS_D_DELAY_DELTA);
+}
+
+static int lineout_status_get(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	return 0;
+}
+
+static int lineout_status_put(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	int state = 0;
+	state = ucontrol->value.integer.value[0];
+
+	switch (state) {
+	case 1:
+		schedule_delayed_work(&lineout_amp_enable, msecs_to_jiffies(50));
+		break;
+	case 0:
+		msm8x16_ext_spk_control(0);
+		break;
+	case 2:
+		schedule_delayed_work(&lineout_amp_dualmode, msecs_to_jiffies(50));
+		break;
+	default:
+		pr_err("%s: Unexpected input value\n", __func__);
+		break;
+	}
+
+	return 0;
+}
+#endif
+
 static int loopback_mclk_get(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
@@ -657,39 +697,6 @@ static int loopback_mclk_put(struct snd_kcontrol *kcontrol,
 	}
 	return ret;
 }
-
-#ifdef CONFIG_MACH_WT88047
-static int lineout_status_get(struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
-{
-	return 0;
-}
-
-static int lineout_status_put(struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
-{
-	pr_debug("%s: external speaker PA mode: %ld\n", __func__, ucontrol->value.integer.value[0]);
-
-	switch (ucontrol->value.integer.value[0]) {
-	case 0:
-		gpio_direction_output(EXT_SPK_AMP_GPIO_1, 0);
-		usleep_range(3000, 5000);
-		gpio_direction_output(EXT_SPK_AMP_GPIO, 0);
-		break;
-	case 1:
-		schedule_delayed_work(&lineout_amp_enable, msecs_to_jiffies(100));
-		break;
-	case 2:
-		schedule_delayed_work(&lineout_amp_dualmode, msecs_to_jiffies(100));
-		break;
-	default:
-		pr_err("%s: Unexpected input value\n", __func__);
-		break;
-	}
-
-	return 0;
-}
-#endif
 
 static int msm_btsco_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					struct snd_pcm_hw_params *params)
@@ -1718,7 +1725,11 @@ static void *def_msm8x16_wcd_mbhc_cal(void)
 	}
 
 #define S(X, Y) ((WCD_MBHC_CAL_PLUG_TYPE_PTR(msm8x16_wcd_cal)->X) = (Y))
+#ifdef CONFIG_MACH_WT88047
+	S(v_hs_max, 1700);
+#else
 	S(v_hs_max, 1500);
+#endif
 #undef S
 #define S(X, Y) ((WCD_MBHC_CAL_BTN_DET_PTR(msm8x16_wcd_cal)->X) = (Y))
 	S(num_btn, WCD_MBHC_DEF_BUTTONS);
@@ -1753,16 +1764,16 @@ static void *def_msm8x16_wcd_mbhc_cal(void)
 	btn_low[4] = 150;
 	btn_high[4] = 150;
 #elif defined CONFIG_MACH_WT88047
-	btn_low[0] = 75;
+	btn_low[0] = 25;
 	btn_high[0] = 75;
-	btn_low[1] = 130;
-	btn_high[1] = 130;
-	btn_low[2] = 260;
-	btn_high[2] = 260;
-	btn_low[3] = 450;
-	btn_high[3] = 450;
-	btn_low[4] = 500;
-	btn_high[4] = 500;
+	btn_low[1] = 200;
+	btn_high[1] = 225;
+	btn_low[2] = 325;
+	btn_high[2] = 400;
+	btn_low[3] = 375;
+	btn_high[3] = 410;
+	btn_low[4] = 430;
+	btn_high[4] = 450;
 #else
 	btn_low[0] = 75;
 	btn_high[0] = 75;
@@ -1804,9 +1815,6 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_ignore_suspend(dapm, "EAR");
 	snd_soc_dapm_ignore_suspend(dapm, "HEADPHONE");
 	snd_soc_dapm_ignore_suspend(dapm, "SPK_OUT");
-#ifdef CONFIG_MACH_WT88047
-	snd_soc_dapm_ignore_suspend(dapm, "SPK_EXTN_OUT");
-#endif
 	snd_soc_dapm_ignore_suspend(dapm, "AMIC1");
 	snd_soc_dapm_ignore_suspend(dapm, "AMIC2");
 	snd_soc_dapm_ignore_suspend(dapm, "AMIC3");
@@ -1826,7 +1834,6 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 			return ret;
 		}
 	}
-
 #ifdef CONFIG_MACH_WT88047
 	msm8x16_ext_spk_gpio_request();
 
@@ -2471,6 +2478,7 @@ static struct snd_soc_dai_link msm8x16_dai[] = {
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
 	},
+#ifndef CONFIG_MACH_WT88047
 	{ /* hw:x, 26 */
 		.name = "QCHAT",
 		.stream_name = "QCHAT",
@@ -2487,6 +2495,7 @@ static struct snd_soc_dai_link msm8x16_dai[] = {
 		.codec_name = "snd-soc-dummy",
 		.be_id = MSM_FRONTEND_DAI_QCHAT,
 	},
+#endif
 	/* Primary AUX PCM Backend DAI Links */
 	{
 		.name = LPASS_BE_AUXPCM_RX,

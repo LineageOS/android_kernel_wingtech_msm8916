@@ -509,6 +509,9 @@ static inline int wcd_mbhc_get_impedance(struct wcd_mbhc *mbhc,
 #endif
 void wcd_mbhc_deinit(struct wcd_mbhc *mbhc);
 #ifdef CONFIG_MACH_WT88047
+#define EXT_SPK_AMP_GPIO			(902+117)
+#define EXT_SPK_AMP_HEADSET_GPIO	(902+8)
+
 extern void msm8x16_wcd_codec_set_headset_state(u32 state);
 extern int msm8x16_wcd_codec_get_headset_state(void);
 #endif
