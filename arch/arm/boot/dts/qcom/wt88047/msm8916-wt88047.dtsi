@@ -132,16 +132,6 @@
 };
 
 &pm8916_mpps {
-	mpp@a100 {
-		qcom,mode = <4>;
-		qcom,invert = <0>;
-		qcom,output-type = <0>;
-		qcom,vin-sel = <2>;
-		qcom,src-sel = <0>;
-		qcom,ain-route = <1>;
-		qcom,master-en = <1>;
-	};
-
 	mpp@a300 { /* MPP 4 */
 		/* Backlight PWM */
 		qcom,mode = <1>;		/* Digital output */
@@ -166,21 +156,9 @@
 &pmx_mdss {
 	qcom,num-grp-pins = <1>;
 	qcom,pins = <&gp 25>;
-	mdss_dsi_active: active {
-		drive-strength = <8>; /* 8 mA */
-		bias-disable = <0>; /* no pull */
-		output-high;
-	};
-	mdss_dsi_suspend: suspend {
-		drive-strength = <2>; /* 2 mA */
-		bias-pull-down; /* pull down */
-		output-low;
-	};
 };
 
 &mdss_dsi0 {
-	qcom,platform-regulator-settings = [02 09 03 00 20 00 01];
-
 	qcom,dsi-pref-prim-pan = <&dsi_r69431_720p_video>;
 	qcom,dsi-pref-sub-pan = <&dsi_nt35521_720p_video>;
 	qcom,dsi-pref-sub1-pan = <&dsi_otm1285a_720p_video>;
@@ -194,6 +172,12 @@
 	pinctrl-1 = <&mdss_dsi_suspend>;
 
 	qcom,platform-reset-gpio = <&msm_gpio 25 0>;
+
+	qcom,ctrl-supply-entries {
+		qcom,ctrl-supply-entry@0 {
+			/delete-property/ qcom,supply-post-on-sleep;
+		};
+	};
 };
 
 &dsi_r69431_720p_video {
@@ -381,8 +365,6 @@
 };
 
 &sdhc_2 {
-	qcom,nonremovable;
-
 	interrupts = <0 1>;
 	interrupt-map = <0 &intc 0 125 0
 		1 &intc 0 221 0>;

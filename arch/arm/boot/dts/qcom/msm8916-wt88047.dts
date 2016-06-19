@@ -19,7 +19,7 @@
 / {
 	model = "Qualcomm Technologies, Inc. MSM 8916 QRD SKUI";
 	compatible = "qcom,msm8916-qrd-wt88047", "qcom,msm8916-qrd", "qcom,msm8916", "qcom,qrd";
-	qcom,board-id = <0x1010b 7 0x1000b 12 0x1010b 12 0x3010b 12>;
+	qcom,board-id = <0x1000b 7> ,<0x1010b 7> ,<0x3010b 7> ,<0x1000b 12> ,<0x1010b 12> ,<0x3010b 12>;
 };
 
 &soc {
@@ -137,6 +137,10 @@
 	qcom,disable-bms;
 };
 
+&pm8916_pwm {
+	qcom,force-pwm-size = <9>;
+};
+
 &usb_otg {
 	qcom,hsusb-otg-mode = <3>;
 	qcom,usbid-gpio = <&msm_gpio 110 0>;
@@ -145,14 +149,10 @@
 	vbus_otg-supply = <&smb1360_otg_supply>;
 };
 
-&spmi_bus {
-	qcom,pm8916@1 {
-		qcom,vibrator@c000 {
-			status = "okay";
-			qcom,vib-timeout-ms = <15000>;
-			qcom,vib-vtg-level-mV = <3000>;
-		};
-	};
+&pm8916_vib {
+	status = "okay";
+	qcom,vib-timeout-ms = <15000>;
+	qcom,vib-vtg-level-mV = <3000>;
 };
 
 &pm8916_rtc {
@@ -172,10 +172,8 @@
 };
 
 &pm8916_pon {
-	qcom,poweron-vadc = <&pm8916_vadc>;
-
 	qcom,pon_1 {
-		qcom,s1-timer = <6000>;
+		qcom,s2-type = <7>;
 	};
 };
 
@@ -199,7 +197,7 @@
 	};
 
 	gpio@c200 { /* GPIO 3 */
-		/* External regulator control for WTR */
+		/* Battery ID detect pin */
 		qcom,mode = <1>;
 		qcom,output-type = <1>;
 		qcom,invert = <0>;
