@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -38,8 +38,14 @@
 		qcom,mdss-dsi-color-order = "rgb_swap_rgb";
 		qcom,mdss-dsi-underflow-color = <0xff>;
 		qcom,mdss-dsi-border-color = <0>;
-		qcom,mdss-dsi-on-command = [29 01 00 00 00 00 02 b0 00 29 01 00 00 00 00 02 d6 01 29 01 00 00 00 00 02 b3 1c 29 01 00 00 00 00 02 b0 03 05 01 00 00 00 00 02 29 00 05 01 00 00 78 00 02 11 00];
-		qcom,mdss-dsi-off-command = [05 01 00 00 14 00 02 28 00 05 01 00 00 dc 00 02 10 00];
+		qcom,mdss-dsi-on-command = [29 01 00 00 00 00 02 B0 00
+				29 01 00 00 00 00 02 D6 01
+				29 01 00 00 00 00 02 B3 1C
+				29 01 00 00 00 00 02 B0 03
+				05 01 00 00 00 00 02 29 00
+				05 01 00 00 78 00 02 11 00];
+		qcom,mdss-dsi-off-command = [05 01 00 00 14 00 02 28 00
+				05 01 00 00 DC 00 02 10 00];
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
 		qcom,mdss-dsi-h-sync-pulse = <10>;

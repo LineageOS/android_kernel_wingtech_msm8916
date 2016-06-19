@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -37,8 +37,18 @@
 		qcom,mdss-dsi-bpp = <24>;
 		qcom,mdss-dsi-underflow-color = <0xff>;
 		qcom,mdss-dsi-border-color = <0>;
-		qcom,mdss-dsi-on-command = [29 01 00 00 00 00 05 ff aa 55 25 01 29 01 00 00 00 00 02 6f 21 29 01 00 00 00 00 02 f7 01 29 01 00 00 00 00 02 6f 21 29 01 00 00 00 00 02 f7 00 29 01 00 00 00 00 05 ff aa 55 25 00 29 01 00 00 00 00 02 35 00 05 01 00 00 78 00 02 11 00 05 01 00 00 00 00 02 29 00];
-		qcom,mdss-dsi-off-command = [05 01 00 00 00 00 02 28 00 05 01 00 00 78 00 02 10 00];
+		qcom,mdss-dsi-on-command = [
+				29 01 00 00 00 00 05 FF AA 55 25 01
+				29 01 00 00 00 00 02 6F 21
+				29 01 00 00 00 00 02 F7 01
+				29 01 00 00 00 00 02 6F 21
+				29 01 00 00 00 00 02 F7 00
+				29 01 00 00 00 00 05 FF AA 55 25 00
+				29 01 00 00 00 00 02 35 00
+				05 01 00 00 78 00 02 11 00
+				05 01 00 00 00 00 02 29 00];
+		qcom,mdss-dsi-off-command = [05 01 00 00 00 00 02 28 00
+				05 01 00 00 78 00 02 10 00];
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
 		qcom,mdss-dsi-h-sync-pulse = <1>;
@@ -48,7 +58,7 @@
 		qcom,mdss-dsi-lane-0-state;
 		qcom,mdss-dsi-lane-1-state;
 		qcom,mdss-dsi-lane-2-state;
-		qcom,mdss-dsi-panel-timings = [b4 2a 1c 00 54 58 20 2e 20 03 04 00];
+		qcom,mdss-dsi-panel-timings = [B4 2A 1C 00 54 58 20 2E 20 03 04 00];
 		qcom,mdss-dsi-t-clk-post = <0x03>;
 		qcom,mdss-dsi-t-clk-pre = <0x23>;
 		qcom,mdss-dsi-bl-min-level = <10>;
