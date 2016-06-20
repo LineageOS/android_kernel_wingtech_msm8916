@@ -1,5 +1,5 @@
-/* Copyright (c) 2013-2014 The Linux Foundation. All rights reserved.
- * Modified for WT88047 by XiaoMi and/or Wingtech, 2015
+/* Copyright (c) 2013-2015 The Linux Foundation. All rights reserved.
+ * Modified for WT88047 by XiaoMi and/or Wingtech, 2016
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -75,7 +75,7 @@
 #define CHG_STAT_DISABLE_BIT		BIT(0)
 
 #define CFG_SFY_TIMER_CTRL_REG		0x0A
-#define SAFETY_TIME_EN_BIT		BIT(4)
+#define SAFETY_TIME_EN_BIT			BIT(4)
 #define SAFETY_TIME_MINUTES_SHIFT	2
 #define SAFETY_TIME_MINUTES_MASK	SMB1360_MASK(3, 2)
 
@@ -125,10 +125,8 @@
 #define JEITA_COMP_EN_MASK		SMB1360_MASK(7, 4)
 #define JEITA_COMP_EN_SHIFT		4
 #define JEITA_COMP_EN_BIT		SMB1360_MASK(7, 4)
-
 #define BATT_CHG_FLT_VTG_REG		0x15
 #define VFLOAT_MASK			SMB1360_MASK(6, 0)
-
 #define CFG_FVC_REG			0x16
 #define FLT_VTG_COMP_MASK		SMB1360_MASK(6, 0)
 
@@ -136,8 +134,8 @@
 #define SHDN_CMD_USE_BIT		BIT(1)
 #define SHDN_CMD_POLARITY_BIT		BIT(2)
 
-#define CURRENT_GAIN_LSB_REG	0x1D
-#define CURRENT_GAIN_MSB_REG	0x1E
+#define CURRENT_GAIN_LSB_REG		0x1D
+#define CURRENT_GAIN_MSB_REG		0x1E
 
 /* Command Registers */
 #define CMD_I2C_REG			0x40
@@ -243,6 +241,10 @@
 #define MAX_8_BITS			255
 #define JEITA_WORK_MS			3000
 
+#define FG_RESET_THRESHOLD_MV		15
+#define SMB1360_FG_RESET_DELAY_MS	1500
+#define VOLTAGE_PREDICTED_REG		0x80
+
 #define SMB1360_REV_1			0x01
 enum recharge_type {
 	FG_SOC_AUTO_RECHARGE = 0,
@@ -321,7 +323,7 @@ struct smb1360_chip {
 	int				current_recharge_type;
 	int				soft_cold_thresh;
 	int				soft_hot_thresh;
-	unsigned int			pre_to_fast_charge_mv;
+	unsigned int	pre_to_fast_charge_mv;
 	int				otg_batt_curr_limit;
 
 	/* configuration data - fg */
@@ -340,6 +342,8 @@ struct smb1360_chip {
 	int				fg_auto_recharge_soc;
 
 	/* status tracking */
+	int				fg_reset_threshold_mv;
+	bool				fg_reset_at_pon;
 	bool				rsense_10mohm;
 	bool				usb_present;
 	bool				batt_present;
@@ -625,14 +629,15 @@ static int64_t float_decode(u16 reg)
 
 	return final_val;
 }
-#define MAX_MANTISSA (1023 * 1000000ULL)
+
+#define MAX_MANTISSA    (1023 * 1000000ULL)
 unsigned int float_encode(int64_t float_val)
 {
 	int exponent = 0, sign = 0;
 	unsigned int final_val = 0;
 
 	if (float_val == 0)
-	return 0;
+		return 0;
 
 	if (float_val < 0) {
 		sign = 1;
@@ -669,10 +674,32 @@ unsigned int float_encode(int64_t float_val)
 
 	/* Convert to 5 bit exponent, 11 bit mantissa */
 	final_val = (float_val & MANTISSA_MASK) | (sign << SIGN_SHIFT) |
-	((exponent << EXPONENT_SHIFT) & EXPONENT_MASK);
+		((exponent << EXPONENT_SHIFT) & EXPONENT_MASK);
 
 	return final_val;
 }
+
+/* FG reset could only be done after FG access being granted */
+static int smb1360_force_fg_reset(struct smb1360_chip *chip)
+{
+	int rc;
+
+	rc = smb1360_masked_write(chip, CMD_I2C_REG, FG_RESET_BIT,
+						FG_RESET_BIT);
+	if (rc) {
+		pr_err("Couldn't reset FG rc=%d\n", rc);
+		return rc;
+	}
+
+	msleep(SMB1360_FG_RESET_DELAY_MS);
+
+	rc = smb1360_masked_write(chip, CMD_I2C_REG, FG_RESET_BIT, 0);
+	if (rc)
+		pr_err("Couldn't un-reset FG rc=%d\n", rc);
+
+	return rc;
+}
+
 
 static int smb1360_enable_fg_access(struct smb1360_chip *chip)
 {
@@ -845,7 +872,8 @@ static int smb1360_charging_disable(struct smb1360_chip *chip, int reason,
 	return rc;
 }
 
-static int smb1360_soft_jeita_comp_enable(struct smb1360_chip *chip, bool enable)
+static int smb1360_soft_jeita_comp_enable(struct smb1360_chip *chip,
+								bool enable)
 {
 	int rc = 0;
 
@@ -854,6 +882,7 @@ static int smb1360_soft_jeita_comp_enable(struct smb1360_chip *chip, bool enable
 	if (rc)
 		pr_err("Couldn't %s JEITA compensation\n", enable ?
 						"enable" : "disable");
+
 	return rc;
 }
 
@@ -882,14 +911,8 @@ static int smb1360_get_prop_batt_status(struct smb1360_chip *chip)
 {
 	int rc;
 	u8 reg = 0, chg_type;
-	union power_supply_propval prop = {0,};
 
-	rc = chip->usb_psy->get_property(chip->usb_psy,
-				POWER_SUPPLY_PROP_ONLINE, &prop);
-	if (rc < 0)
-		pr_err("Couldn't not read USB ONLINE property, rc=%d\n", rc);
-
-	if (chip->batt_full && prop.intval)
+	if (chip->batt_full && chip->usb_present)
 		return POWER_SUPPLY_STATUS_FULL;
 
 	rc = smb1360_read(chip, STATUS_3_REG, &reg);
@@ -992,7 +1015,7 @@ static int smb1360_get_prop_batt_capacity(struct smb1360_chip *chip)
 		soc += 1;
 
 	if (chip->empty_soc) {
-		pr_err("zzj empty_soc\n");
+
 		if (soc > 0)
 			chip->empty_soc = false;
 
@@ -1000,10 +1023,12 @@ static int smb1360_get_prop_batt_capacity(struct smb1360_chip *chip)
 
 	pr_debug("msys_soc_reg=0x%02x, fg_soc=%d batt_full = %d\n", reg,
 						soc, chip->batt_full);
+
 	if (soc == 100)
 		chip->batt_full = 1;
 	else
 		chip->batt_full = 0;
+
 	return chip->batt_full ? 100 : bound(soc, 0, 100);
 }
 
@@ -1212,7 +1237,7 @@ static int smb1360_set_appropriate_usb_current(struct smb1360_chip *chip)
 	pr_debug("ICL set to = %d\n", input_current_limit[i]);
 
 	if ((current_ma <= CURRENT_100_MA) &&
-		(chip->workaround_flags & WRKRND_USB100_FAIL)) {
+			(chip->workaround_flags & WRKRND_USB100_FAIL)) {
 		pr_debug("usb100 not supported\n");
 		current_ma = CURRENT_500_MA;
 	}
@@ -1379,7 +1404,7 @@ static int smb1360_recharge_type_set(struct smb1360_chip *chip, enum recharge_ty
 
 	pr_debug("fg_auto_recharge_soc:%d warm_recharge_mv:%d\n", chip->fg_auto_recharge_soc, chip->warm_recharge_mv);
 	if (chip->fg_auto_recharge_soc != -EINVAL
-	    || chip->warm_recharge_mv != -EINVAL) {
+			|| chip->warm_recharge_mv != -EINVAL) {
 		rc = smb1360_enable_fg_access(chip);
 		if (rc) {
 			pr_err("Couldn't enable FG access rc=%d\n", rc);
@@ -1610,7 +1635,6 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 
 	if (temp > chip->hot_bat_decidegc) {
 		/* battery status is hot, only config thresholds */
-
 		rc = smb1360_set_soft_jeita_threshold(chip,
 			chip->warm_bat_decidegc, chip->hot_bat_decidegc);
 		if (rc) {
@@ -1621,10 +1645,8 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 	} else if (temp > chip->warm_bat_decidegc ||
 		(temp == chip->warm_bat_decidegc && !!chip->soft_hot_rt_stat)) {
 		/* battery status is warm, update status and do compensation manually */
-
 		chip->batt_warm = true;
 		chip->batt_cool = false;
-
 		rc = smb1360_float_voltage_set(chip, chip->warm_bat_mv);
 		if (rc) {
 			dev_err(chip->dev, "Couldn't warm set float voltage\n");
@@ -1644,10 +1666,8 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 	} else if (temp > chip->cool_bat_decidegc ||
 		(temp == chip->cool_bat_decidegc && !chip->soft_cold_rt_stat)) {
 		/* battery status is good, do the normal charging */
-
 		chip->batt_warm = false;
 		chip->batt_cool = false;
-
 		rc = smb1360_float_voltage_set(chip, chip->vfloat_mv);
 		if (rc) {
 			dev_err(chip->dev, "Couldn't set float voltage\n");
@@ -1715,7 +1735,6 @@ static int hot_soft_handler(struct smb1360_chip *chip, u8 rt_stat)
 	chip->soft_hot_rt_stat = rt_stat;
 	pr_debug("rt_stat = 0x%02x\n", rt_stat);
 
-	/* update batt_cool and batt_warm flags if we not take it in work around */
 	if (!chip->config_hard_thresholds)
 		chip->batt_warm = !!rt_stat;
 
@@ -1733,7 +1752,6 @@ static int cold_soft_handler(struct smb1360_chip *chip, u8 rt_stat)
 	int rc = 0;
 	chip->soft_cold_rt_stat = rt_stat;
 	pr_debug("rt_stat = 0x%02x\n", rt_stat);
-	/* update batt_cool and batt_warm flags if we not take it in work around */
 	if (!chip->config_hard_thresholds)
 		chip->batt_cool = !!rt_stat;
 
@@ -1873,28 +1891,26 @@ static int smb1360_select_fg_i2c_address(struct smb1360_chip *chip)
 	case FG_ACCESS_CFG:
 		addr = (addr & ~FG_I2C_CFG_MASK) | FG_CFG_I2C_ADDR;
 		break;
-
 	case FG_ACCESS_PROFILE_A:
 		addr = (addr & ~FG_I2C_CFG_MASK) | FG_PROFILE_A_ADDR;
 		break;
-
 	case FG_ACCESS_PROFILE_B:
 		addr = (addr & ~FG_I2C_CFG_MASK) | FG_PROFILE_B_ADDR;
 		break;
-
 	default:
 		pr_err("Invalid FG access type=%d\n", chip->fg_access_type);
-	return -EINVAL;
+		return -EINVAL;
 	}
 
 	chip->fg_i2c_addr = addr >> 0x1;
 	pr_debug("FG_access_type=%d fg_i2c_addr=%x\n", chip->fg_access_type,
-	chip->fg_i2c_addr);
+							chip->fg_i2c_addr);
 
 	return 0;
 }
 
-static int smb1360_adjust_current_gain(struct smb1360_chip *chip, int gain_factor)
+static int smb1360_adjust_current_gain(struct smb1360_chip *chip,
+							int gain_factor)
 {
 	int i, rc;
 	int64_t current_gain, new_current_gain;
@@ -1943,21 +1959,22 @@ static int smb1360_adjust_current_gain(struct smb1360_chip *chip, int gain_facto
 
 	for (i = 0; i < ARRAY_SIZE(reg_val_mapping); i++) {
 		if (reg_val_mapping[i][0] == 0xE1)
-		reg_val_mapping[i][1] = reg[0];
+			reg_val_mapping[i][1] = reg[0];
 		if (reg_val_mapping[i][0] == 0xE3)
-		reg_val_mapping[i][1] = reg[1];
+			reg_val_mapping[i][1] = reg[1];
 
 		pr_debug("Writing reg_add=%x value=%x\n", reg_val_mapping[i][0],
 		reg_val_mapping[i][1]);
 
 		rc = smb1360_fg_write(chip, reg_val_mapping[i][0],
-		reg_val_mapping[i][1]);
+				reg_val_mapping[i][1]);
 		if (rc) {
 			pr_err("Write fg address 0x%x failed, rc = %d\n",
-			reg_val_mapping[i][0], rc);
+					reg_val_mapping[i][0], rc);
 			return rc;
 		}
 	}
+
 	return 0;
 }
 
@@ -1985,13 +2002,13 @@ static int smb1360_otp_gain_config(struct smb1360_chip *chip, int gain_factor)
 	}
 
 	rc = smb1360_masked_write(chip, CFG_FG_BATT_CTRL_REG,
-	CFG_FG_OTP_BACK_UP_ENABLE, CFG_FG_OTP_BACK_UP_ENABLE);
+			CFG_FG_OTP_BACK_UP_ENABLE, CFG_FG_OTP_BACK_UP_ENABLE);
 	if (rc) {
 		pr_err("Write reg 0x0E failed, rc = %d\n", rc);
 		goto restore_fg;
 	}
 
-	restore_fg:
+restore_fg:
 	rc = smb1360_disable_fg_access(chip);
 	if (rc) {
 		pr_err("Couldn't disable FG access rc = %d\n", rc);
@@ -1999,7 +2016,7 @@ static int smb1360_otp_gain_config(struct smb1360_chip *chip, int gain_factor)
 	}
 
 	return rc;
-}
+	}
 
 struct smb_irq_info {
 	const char		*name;
@@ -2112,7 +2129,7 @@ static struct irq_handler_info handlers[] = {
 		{
 			{
 				.name		= "power_ok",
-				.smb_irq		= power_ok_handler,
+				.smb_irq	= power_ok_handler,
 			},
 			{
 				.name		= "unused",
@@ -2732,7 +2749,6 @@ static int smb1360_otg_regulator_enable(struct regulator_dev *rdev)
 						CMD_OTG_EN_BIT);
 	if (rc)
 		pr_err("Couldn't enable  OTG mode rc=%d\n", rc);
-
 	return rc;
 }
 
@@ -2890,7 +2906,6 @@ static int smb1360_check_batt_profile(struct smb1360_chip *chip)
 		rc = -EAGAIN;
 		goto restore_fg;
 	}
-
 	/* delay after handshaking for profile-switch to continue */
 	msleep(1500);
 
@@ -2979,9 +2994,9 @@ static int determine_initial_status(struct smb1360_chip *chip)
 		return rc;
 	}
 
-	if (chip->workaround_flags & WRKRND_HARD_JEITA)
+	if (chip->workaround_flags & WRKRND_HARD_JEITA) {
 		schedule_delayed_work(&chip->jeita_work, 0);
-	else {
+	} else {
 		if (reg & IRQ_A_HOT_HARD_BIT)
 			chip->batt_hot = true;
 		if (reg & IRQ_A_COLD_HARD_BIT)
@@ -3007,6 +3022,54 @@ static int smb1360_fg_config(struct smb1360_chip *chip)
 {
 	int rc = 0, temp, fcc_mah;
 	u8 reg = 0, reg2[2];
+
+	if (chip->fg_reset_at_pon) {
+		int v_predicted, v_now;
+
+		rc = smb1360_enable_fg_access(chip);
+		if (rc) {
+			pr_err("Couldn't enable FG access rc=%d\n", rc);
+			return rc;
+		}
+
+		rc = smb1360_read_bytes(chip, VOLTAGE_PREDICTED_REG, reg2, 2);
+		if (rc) {
+			pr_err("Failed to read VOLTAGE_PREDICTED rc=%d\n", rc);
+			goto disable_fg_reset;
+		}
+		v_predicted = (reg2[1] << 8) | reg2[0];
+		v_predicted = div_u64(v_predicted * 5000, 0x7FFF);
+
+		rc = smb1360_read_bytes(chip, SHDW_FG_VTG_NOW, reg2, 2);
+		if (rc) {
+			pr_err("Failed to read SHDW_FG_VTG_NOW rc=%d\n", rc);
+			goto disable_fg_reset;
+		}
+		v_now = (reg2[1] << 8) | reg2[0];
+		v_now = div_u64(v_now * 5000, 0x7FFF);
+
+		pr_debug("v_predicted=%d v_now=%d reset_threshold=%d\n",
+			v_predicted, v_now, chip->fg_reset_threshold_mv);
+
+		/*
+		 * Reset FG if the predicted voltage is off wrt
+		 * the real-time voltage.
+		 */
+		temp = abs(v_predicted - v_now);
+		if (temp >= chip->fg_reset_threshold_mv) {
+			pr_info("Reseting FG - v_delta=%d threshold=%d\n",
+					temp, chip->fg_reset_threshold_mv);
+			/* delay for the FG access to settle */
+			msleep(1500);
+			rc = smb1360_force_fg_reset(chip);
+			if (rc) {
+				pr_err("Couldn't reset FG rc=%d\n", rc);
+				goto disable_fg_reset;
+			}
+		}
+disable_fg_reset:
+		smb1360_disable_fg_access(chip);
+	}
 
 	/*
 	 * The below IRQ thresholds are not accessible in REV_1
@@ -3245,7 +3308,6 @@ static int smb1360_fg_config(struct smb1360_chip *chip)
 			chip->current_recharge_type = FG_SOC_AUTO_RECHARGE;
 		}
 
-
 disable_fg:
 		/* disable FG access */
 		smb1360_disable_fg_access(chip);
@@ -3253,6 +3315,7 @@ disable_fg:
 
 	return rc;
 }
+
 static void smb1360_check_feature_support(struct smb1360_chip *chip)
 {
 
@@ -3307,8 +3370,8 @@ static int smb1360_enable(struct smb1360_chip *chip, bool enable)
 				dev_err(chip->dev, "Couldn't shutdown smb1360 rc = %d\n",
 									rc);
 				return rc;
-				}
 			}
+		}
 	} else {
 		dev_dbg(chip->dev, "SMB not configured for CMD based shutdown\n");
 	}
@@ -3332,6 +3395,7 @@ static int smb1360_jeita_init(struct smb1360_chip *chip)
 {
 	int rc = 0;
 	int temp;
+
 	if (chip->config_hard_thresholds) {
 		if (chip->soft_jeita_supported) {
 			chip->workaround_flags |= WRKRND_HARD_JEITA;
@@ -3365,7 +3429,7 @@ static int smb1360_jeita_init(struct smb1360_chip *chip)
 					FLT_VTG_COMP_MASK, temp);
 			if (rc < 0) {
 				dev_err(chip->dev, "Couldn't set VFLT compensation = %d",
-										rc);
+									rc);
 				return rc;
 			}
 
@@ -3427,8 +3491,8 @@ static int smb1360_hw_init(struct smb1360_chip *chip)
 	if (chip->rsense_10mohm) {
 		rc = smb1360_otp_gain_config(chip, 2);
 		if (rc < 0) {
-		pr_err("Couldn't config OTP rc=%d\n", rc);
-		return rc;
+			pr_err("Couldn't config OTP rc=%d\n", rc);
+			return rc;
 		}
 	}
 
@@ -3506,7 +3570,7 @@ static int smb1360_hw_init(struct smb1360_chip *chip)
 						CHG_CURR_TERM_DIS_BIT);
 		if (rc) {
 			dev_err(chip->dev, "Couldn't set iterm rc = %d\n",
-							rc);
+								rc);
 			return rc;
 		}
 	}
@@ -3797,6 +3861,7 @@ static int smb_parse_batt_id(struct smb1360_chip *chip)
 
 	return 0;
 }
+
 /*
  * Be noted that if you do not define "qcom,config-hard-thresholds"
  * and "qcom,soft-jeita-supported", SMB1360 will follow its default
@@ -3812,14 +3877,16 @@ static int smb1360_parse_jeita_params(struct smb1360_chip *chip)
 		rc = of_property_read_u32(node,
 			"qcom,cold-bat-decidegc", &chip->cold_bat_decidegc);
 		if (rc) {
-			pr_err("cold_bat_decidegc property error, rc = %d\n", rc);
+			pr_err("cold_bat_decidegc property error, rc = %d\n",
+								rc);
 			return -EINVAL;
 		}
 
 		rc = of_property_read_u32(node,
 			"qcom,hot-bat-decidegc", &chip->hot_bat_decidegc);
 		if (rc) {
-			pr_err("hot_bat_decidegc property error, rc = %d\n", rc);
+			pr_err("hot_bat_decidegc property error, rc = %d\n",
+								rc);
 			return -EINVAL;
 		}
 
@@ -3833,14 +3900,16 @@ static int smb1360_parse_jeita_params(struct smb1360_chip *chip)
 		rc = of_property_read_u32(node, "qcom,warm-bat-decidegc",
 						&chip->warm_bat_decidegc);
 		if (rc) {
-			pr_err("warm_bat_decidegc property error, rc = %d\n", rc);
+			pr_err("warm_bat_decidegc property error, rc = %d\n",
+								rc);
 			return -EINVAL;
 		}
 
 		rc = of_property_read_u32(node, "qcom,cool-bat-decidegc",
 						&chip->cool_bat_decidegc);
 		if (rc) {
-			pr_err("cool_bat_decidegc property error, rc = %d\n", rc);
+			pr_err("cool_bat_decidegc property error, rc = %d\n",
+								rc);
 			return -EINVAL;
 		}
 		rc = of_property_read_u32(node, "qcom,cool-bat-mv",
@@ -3884,7 +3953,7 @@ static int smb1360_parse_jeita_params(struct smb1360_chip *chip)
 }
 
 extern int power_supply_set_charging_enabled(struct power_supply *psy,
-												bool enabled);
+													bool enabled);
 #ifdef CONFIG_BQ2022A_SUPPORT
 extern int bq2022a_get_bat_module_id(void);
 
@@ -4004,21 +4073,21 @@ static int smb1360_update_power_on_state(struct smb1360_chip *chip)
 	for (i = 0; i < ARRAY_SIZE(handlers); i++) {
 		if (handlers[i].stat_reg == IRQ_F_REG) {
 			rc = smb1360_read(chip, handlers[i].stat_reg,
-				&handlers[i].val);
+						&handlers[i].val);
 			if (rc < 0) {
 				dev_err(chip->dev, "Couldn't read %d rc = %d\n",
-					handlers[i].stat_reg, rc);
+						handlers[i].stat_reg, rc);
 				return -EPERM;
-				}
+			}
 			info = handlers[i].irq_info;
 			for (j = 0; j < ARRAY_SIZE(handlers[i].irq_info); j++) {
-				if (!strcmp(info[j].name,  "power_ok")) {
+				if (!strcmp(info[j].name, "power_ok")) {
 					rt_stat = handlers[i].val & (IRQ_STATUS_MASK << (j * BITS_PER_IRQ));
 					if (rt_stat) {
 						handlers[i].prev_val = handlers[i].val;
 						chip->power_ok = rt_stat;
 						pr_debug("chip->power_ok  = %d\n", chip->power_ok);
-					}
+					   }
 				}
 			}
 		}
@@ -4192,6 +4261,16 @@ static int smb_parse_dt(struct smb1360_chip *chip)
 					&chip->fg_auto_recharge_soc);
 	if (rc < 0)
 		chip->fg_auto_recharge_soc = -EINVAL;
+
+	if (of_property_read_bool(node, "qcom,fg-reset-at-pon")) {
+		chip->fg_reset_at_pon = true;
+		rc = of_property_read_u32(node, "qcom,fg-reset-thresold-mv",
+						&chip->fg_reset_threshold_mv);
+		if (rc) {
+			pr_debug("FG reset voltage threshold not specified using 50mV\n");
+			chip->fg_reset_threshold_mv = FG_RESET_THRESHOLD_MV;
+		}
+	}
 
 	return 0;
 }
@@ -4441,7 +4520,6 @@ fail_hw_init:
 static int smb1360_remove(struct i2c_client *client)
 {
 	struct smb1360_chip *chip = i2c_get_clientdata(client);
-
 	regulator_unregister(chip->otg_vreg.rdev);
 	power_supply_unregister(&chip->batt_psy);
 	mutex_destroy(&chip->charging_disable_lock);
