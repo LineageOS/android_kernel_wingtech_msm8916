@@ -129,6 +129,19 @@
 		qcom,bq2022a-id-gpio = <&pm8916_gpios 3 0>;
 		status= "okay";
 	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&button_backlight_off>;
+
+		keypad-backlight {
+			gpios = <&msm_gpio 119 0>;
+			label = "button-backlight";
+			linux,default-trigger = "none";
+		};
+	};
 };
 
 &pm8916_mpps {
@@ -244,6 +257,11 @@
 			drive-strength = <2>;
 			bias-pull-down;
 		};
+	};
+
+	gpio_led_pins {
+		qcom,pins = <&gp 16>, <&gp 17>;
+		qcom,num-grp-pins = <2>;
 	};
 };
 
