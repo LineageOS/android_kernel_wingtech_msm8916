@@ -22,7 +22,6 @@
 #include <linux/thermal.h>
 #include <linux/platform_device.h>
 #include "bq2022a-batid.h"
-/* #include <linux/hardware_info.h> */
 
 /* BQ2022A. */
 #define	ROM_COMMAND		(0xcc)
@@ -44,6 +43,7 @@ unsigned char bq2022a_sdq_detect(void)
 
 	gpio_direction_output(bq2022a_bat_id, GPIO_LOW);
 
+	/* Reset time should be > 480 usec */
 	udelay(800);
 	gpio_direction_input(bq2022a_bat_id);
 	udelay(60);
@@ -51,7 +51,7 @@ unsigned char bq2022a_sdq_detect(void)
 	while ((PresenceTimer > 0) && (GotPulse == 0)) {
 		InputData = gpio_get_value(bq2022a_bat_id);
 		if (InputData == 0) {
-		GotPulse = 1;
+			GotPulse = 1;
 		} else {
 			GotPulse = 0;
 			--PresenceTimer;
@@ -120,7 +120,7 @@ void bq2022a_sdq_writebyte(u8 value)
 }
 
 static int bat_module_id;
-bool is_battery_feedback;
+bool is_battery_feedback = false;
 
 static const unsigned char con_bat_id[] = {
 	0xed, 0x21, 0x4c, 0xe5,
@@ -289,7 +289,6 @@ static int bq2022a_probe(struct platform_device *pdev)
 		break;
 	}
 	pr_debug("battery module:%s", bat_id_buf);
-	/* hardwareinfo_set_prop(HARDWARE_BATTERY_ID, bat_id_buf); */
 	pr_err("success!!\n");
 
 	return rc;
