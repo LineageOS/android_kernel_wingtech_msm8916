@@ -177,19 +177,6 @@
 	};
 };
 
-&pm8916_vadc {
-	chan@11 {
-		label = "mpp2_vol";
-		reg = <0x11>;
-		qcom,decimation = <0>;
-		qcom,pre-div-channel-scaling = <0>;
-		qcom,calibration-type = "absolute";
-		qcom,scale-function = <0>;
-		qcom,hw-settle-time = <0>;
-		qcom,fast-avg-setup = <0>;
-	};
-};
-
 &pm8916_gpios {
 	gpio@c100 { /* GPIO 2 */
 		/* NFC_CLK_REQ */

@@ -33,18 +33,6 @@
                 splash_region@83000000 { /* Give this region to mdss_fb0 */
                         /* status = "disabled"; */
                 };
-
-                modem_adsp_region@0 {
-                        reg = <0x0 0x86800000 0x0 0x05400000>;
-                };
-
-                pheripheral_region@0 {
-                        reg = <0x0 0x8bc00000 0x0 0x0600000>;
-                };
-
-                secure_region@0 {
-                        /* status = "disabled"; */
-                };
         };
 };
 
@@ -59,12 +47,6 @@
                 android,ramoops-record-size = <0x20000>;
                 android,ramoops-dump-oops = <0x1>;
         };
-
-	qcom,ion {
-		qcom,ion-heap@8 { /* CP_MM HEAP */
-			status = "disabled";
-		};
-	};
 
 	sound {
 		compatible = "qcom,msm8x16-audio-codec";
@@ -169,9 +151,17 @@
 &pmx_mdss {
 	qcom,num-grp-pins = <1>;
 	qcom,pins = <&gp 25>;
+	mdss_dsi_active: active {
+		output-high;
+	};
+	mdss_dsi_suspend: suspend {
+		output-low;
+	};
 };
 
 &mdss_dsi0 {
+	qcom,platform-regulator-settings = [02 09 03 00 20 00 01];
+
 	qcom,dsi-pref-prim-pan = <&dsi_r69431_720p_video>;
 	qcom,dsi-pref-sub-pan = <&dsi_nt35521_720p_video>;
 	qcom,dsi-pref-sub1-pan = <&dsi_otm1285a_720p_video>;
