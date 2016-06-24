@@ -156,7 +156,6 @@
 };
 
 &pm8916_rtc {
-	qcom,qpnp-rtc-write = <1>;
 	qcom,qpnp-rtc-alarm-pwrup = <1>;
 };
 
