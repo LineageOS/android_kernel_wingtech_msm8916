@@ -378,7 +378,7 @@ static int ltr559_chip_reset(struct i2c_client *client)
 	return ret;
 }
 
-static u32 ps_state_last = 0xff;
+static u32 ps_state_last = 1;
 
 
 static void ltr559_set_ps_threshold(struct i2c_client *client, u8 addr, u16 value)
@@ -427,8 +427,8 @@ static int ltr559_ps_enable(struct i2c_client *client, int on)
 			return -EFAULT;
 		}
 
-		data->ps_state = 0xff;
-		ps_state_last = 0xff;
+		data->ps_state = 1;
+		ps_state_last = 1;
 
 #if defined(DYNAMIC_CALIBRATE)
 		ltr559_set_ps_threshold(data->client, LTR559_PS_THRES_LOW_0, data->platform_data->prox_hsyteresis_threshold);
@@ -461,7 +461,7 @@ static int ltr559_ps_enable(struct i2c_client *client, int on)
 		}
 
 		timestamp = ktime_get_boottime();
-		data->ps_state = 0xff;
+		data->ps_state = 1;
 		input_report_abs(data->input_dev_ps, ABS_DISTANCE, data->ps_state);
 		input_event(data->input_dev_ps, EV_SYN, SYN_TIME_SEC,
 				ktime_to_timespec(timestamp).tv_sec);
@@ -629,7 +629,7 @@ static void ltr559_ps_work_func(struct work_struct *work)
 #if defined(DYNAMIC_CALIBRATE)
 			if ((data->dynamic_noise >= 10 && (((int)data->dynamic_noise - psdata > 30) ||
 					(psdata - (int)data->dynamic_noise > 15))) ||
-					(ps_state_last == 0xff && (psdata - (int)data->dynamic_noise) < 200)) {
+					(ps_state_last == 1 && (psdata - (int)data->dynamic_noise) < 200)) {
 
 				data->dynamic_noise = psdata;
 
