@@ -88,11 +88,7 @@ obj-$(CONFIG_SENSORS_LTR553)	+= ltr553.o
 
 obj-$(CONFIG_SENSORS_BMM050)    += bmm050_driver.o bmm050.o
 obj-$(CONFIG_SENSORS_BMG)       += bmg160_driver.o bmg160.o
-ifeq ($(CONFIG_MACH_WT88047),y)
-obj-$(CONFIG_SENSORS_LTR559)    += ltr559_wt88047.o
-else
 obj-$(CONFIG_SENSORS_LTR559)    += ltr559.o
-endif
 
 ifeq ($(CONFIG_SENSORS_BMA2X2_ENABLE_INT1),y)
 	EXTRA_CFLAGS += -DBMA2X2_ENABLE_INT1
