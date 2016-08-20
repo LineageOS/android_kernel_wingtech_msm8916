@@ -21,4 +21,10 @@ config MACH_WT88047
 	help
 	  Support for Wingtech WT88047 Redmi 2 variant
 
+config MACH_T86519A1
+	bool "T86519A1 board"
+	select MACH_WINGTECH_MSM8916
+	help
+	  Support for Wingtech T86519A1 variant
+
 endmenu
