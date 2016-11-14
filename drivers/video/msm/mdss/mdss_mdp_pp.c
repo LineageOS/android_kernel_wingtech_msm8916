@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -2226,7 +2226,7 @@ static int pp_ad_calc_bl(struct msm_fb_data_type *mfd, int bl_in, int *bl_out,
 		pr_debug("AD not supported on device.\n");
 		return ret;
 	} else if (ret || !ad) {
-		pr_err("Failed to get ad info: ret = %d, ad = 0x%p.\n",
+		pr_err("Failed to get ad info: ret = %d, ad = 0x%pK.\n",
 			ret, ad);
 		return ret;
 	}
@@ -2242,7 +2242,7 @@ static int pp_ad_calc_bl(struct msm_fb_data_type *mfd, int bl_in, int *bl_out,
 
 	if (!ad->bl_mfd || !ad->bl_mfd->panel_info ||
 		!ad->bl_att_lut) {
-		pr_err("Invalid ad info: bl_mfd = 0x%p, ad->bl_mfd->panel_info = 0x%p, bl_att_lut = 0x%p\n",
+		pr_err("Invalid ad info: bl_mfd = 0x%pK, ad->bl_mfd->panel_info = 0x%pK, bl_att_lut = 0x%pK\n",
 			ad->bl_mfd,
 			(!ad->bl_mfd) ? NULL : ad->bl_mfd->panel_info,
 			ad->bl_att_lut);
@@ -3607,7 +3607,7 @@ static int pp_hist_enable(struct pp_hist_col_info *hist_info,
 	spin_lock_irqsave(&hist_info->hist_lock, flag);
 	if (hist_info->col_en) {
 		spin_unlock_irqrestore(&hist_info->hist_lock, flag);
-		pr_info("%s Hist collection has already been enabled %p\n",
+		pr_info("%s Hist collection has already been enabled %pK\n",
 			__func__, hist_info->base);
 		goto exit;
 	}
@@ -3744,15 +3744,17 @@ static int pp_hist_disable(struct pp_hist_col_info *hist_info)
 	spin_lock_irqsave(&hist_info->hist_lock, flag);
 	if (hist_info->col_en == false) {
 		spin_unlock_irqrestore(&hist_info->hist_lock, flag);
-		pr_debug("Histogram already disabled (%p)\n", hist_info->base);
+		pr_debug("Histogram already disabled (%pK)\n", hist_info->base);
 		ret = -EINVAL;
 		goto exit;
 	}
-	hist_info->col_en = false;
-	hist_info->col_state = HIST_UNKNOWN;
 	spin_unlock_irqrestore(&hist_info->hist_lock, flag);
 	mdss_mdp_hist_intr_req(&mdata->hist_intr,
 				intr_mask << hist_info->intr_shift, false);
+	spin_lock_irqsave(&hist_info->hist_lock, flag);
+	hist_info->col_en = false;
+	hist_info->col_state = HIST_UNKNOWN;
+	spin_unlock_irqrestore(&hist_info->hist_lock, flag);
 	complete_all(&hist_info->first_kick);
 	complete_all(&hist_info->comp);
 	/* if hist v2, make sure HW is unlocked */
@@ -3858,7 +3860,7 @@ int mdss_mdp_hist_intr_req(struct mdss_intr *intr, u32 bits, bool en)
 	unsigned long flag;
 	int ret = 0;
 	if (!intr) {
-		pr_err("NULL addr passed, %p\n", intr);
+		pr_err("NULL addr passed, %pK\n", intr);
 		return -EINVAL;
 	}
 
@@ -4418,6 +4420,7 @@ void mdss_mdp_hist_intr_done(u32 isr)
 	bool need_complete = false;
 	u32 isr_mask = (is_hist_v2) ? HIST_V2_INTR_BIT_MASK :
 			HIST_V1_INTR_BIT_MASK;
+	u32 intr_mask = is_hist_v2 ? 1 : 3;
 
 	isr &= isr_mask;
 	while (isr != 0) {
@@ -4452,7 +4455,16 @@ void mdss_mdp_hist_intr_done(u32 isr)
 			 * Histogram collection is disabled yet we got an
 			 * interrupt somehow.
 			 */
-			pr_err("hist Done interrupt, col_en=false!\n");
+			if (mdata->mdp_hist_irq_mask ==
+					(intr_mask << hist_info->intr_shift)) {
+				mdss_mdp_hist_intr_req(&mdata->hist_intr,
+					intr_mask << hist_info->intr_shift,
+					false);
+				pr_err("Disable hist interrupt,	irq mask=%x\n",
+						mdata->mdp_hist_irq_mask);
+			} else {
+				pr_err("hist Done interrupt, col_en=false!\n");
+			}
 		}
 		/* Histogram Reset Done Interrupt */
 		if (hist_info && is_hist_reset_done && (hist_info->col_en)) {
@@ -4612,7 +4624,7 @@ static int pp_ad_invalidate_input(struct msm_fb_data_type *mfd)
 
 	ret = mdss_mdp_get_ad(mfd, &ad);
 	if (ret || !ad) {
-		pr_err("Fail to get ad: ret = %d, ad = 0x%p\n", ret, ad);
+		pr_err("Fail to get ad: ret = %d, ad = 0x%pK\n", ret, ad);
 		return -EINVAL;
 	}
 	pr_debug("AD backlight level changed (%d), trigger update to AD\n",

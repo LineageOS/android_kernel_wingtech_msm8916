@@ -56,6 +56,7 @@ size_t get_cal_info_size(int32_t cal_type)
 		size = sizeof(struct audio_cal_info_adm_top);
 		break;
 	case ADM_CUST_TOPOLOGY_CAL_TYPE:
+	case CORE_CUSTOM_TOPOLOGIES_CAL_TYPE:
 		size = 0;
 		break;
 	case ADM_AUDPROC_CAL_TYPE:
@@ -174,6 +175,7 @@ size_t get_user_cal_type_size(int32_t cal_type)
 		size = sizeof(struct audio_cal_type_adm_top);
 		break;
 	case ADM_CUST_TOPOLOGY_CAL_TYPE:
+	case CORE_CUSTOM_TOPOLOGIES_CAL_TYPE:
 		size = sizeof(struct audio_cal_type_basic);
 		break;
 	case ADM_AUDPROC_CAL_TYPE:
@@ -580,7 +582,7 @@ static struct cal_block_data *create_cal_block(struct cal_type_data *cal_type,
 		goto err;
 	}
 	cal_block->buffer_number = basic_cal->cal_hdr.buffer_number;
-	pr_debug("%s: created block for cal type %d, buf num %d, map handle %d, map size %zd paddr 0x%pa!\n",
+	pr_debug("%s: created block for cal type %d, buf num %d, map handle %d, map size %zd paddr 0x%pK!\n",
 		__func__, cal_type->info.reg.cal_type,
 		cal_block->buffer_number,
 		cal_block->map_data.ion_map_handle,
