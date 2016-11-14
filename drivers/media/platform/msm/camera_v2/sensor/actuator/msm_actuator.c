@@ -478,20 +478,26 @@ static int32_t msm_actuator_init_step_table(struct msm_actuator_ctrl_t *a_ctrl,
 	int16_t code_per_step = 0;
 	uint32_t qvalue = 0;
 	int16_t cur_code = 0;
-	int16_t step_index = 0, region_index = 0;
+	uint16_t step_index = 0, region_index = 0;
 	uint16_t step_boundary = 0;
 	uint32_t max_code_size = 1;
 	uint16_t data_size = set_info->actuator_params.data_size;
 	CDBG("Enter\n");
 
+	/* validate the actuator state */
+	if (a_ctrl->actuator_state != ACTUATOR_POWER_UP) {
+		pr_err("%s:%d invalid actuator_state %d\n"
+			, __func__, __LINE__, a_ctrl->actuator_state);
+		return -EINVAL;
+	}
+
 	for (; data_size > 0; data_size--)
 		max_code_size *= 2;
 
 	a_ctrl->max_code_size = max_code_size;
-	if ((a_ctrl->actuator_state == ACTUATOR_POWER_UP) &&
-		(a_ctrl->step_position_table != NULL)) {
-		kfree(a_ctrl->step_position_table);
-	}
+	/* free the step_position_table to allocate a new one */
+	kfree(a_ctrl->step_position_table);
+
 	a_ctrl->step_position_table = NULL;
 
 	if (set_info->af_tuning_params.total_steps
@@ -520,6 +526,15 @@ static int32_t msm_actuator_init_step_table(struct msm_actuator_ctrl_t *a_ctrl,
 		step_boundary =
 			a_ctrl->region_params[region_index].
 			step_bound[MOVE_NEAR];
+		if (step_boundary >
+			set_info->af_tuning_params.total_steps) {
+			pr_err("invalid step_boundary = %d, max_val = %d",
+				step_boundary,
+				set_info->af_tuning_params.total_steps);
+			kfree(a_ctrl->step_position_table);
+			a_ctrl->step_position_table = NULL;
+			return -EINVAL;
+		}
 		for (; step_index <= step_boundary; step_index++) {
 			if (qvalue > 1 && qvalue <= MAX_QVALUE)
 				cur_code = step_index * code_per_step / qvalue;
@@ -595,6 +610,30 @@ static int32_t msm_actuator_vreg_control(struct msm_actuator_ctrl_t *a_ctrl,
 	return rc;
 }
 
+#ifdef CONFIG_MACH_T86519A1
+static int msm_actuator_software_pwdn(struct msm_actuator_ctrl_t *a_ctrl)
+{
+	int rc = 0;
+	struct msm_camera_i2c_reg_setting reg_setting;
+	struct msm_camera_i2c_reg_array *i2c_reg_tbl=NULL;
+	struct msm_camera_i2c_reg_array i2c_reg_tbll={0x80,0x00,10};
+
+	a_ctrl->i2c_tbl_index = 1;
+	i2c_reg_tbl = &i2c_reg_tbll;
+	reg_setting.reg_setting = i2c_reg_tbl;
+	reg_setting.size = 1;
+	reg_setting.data_type = MSM_CAMERA_I2C_BYTE_DATA;
+	reg_setting.addr_type = MSM_CAMERA_I2C_BYTE_ADDR;
+	reg_setting.delay = 10;
+	rc = a_ctrl->i2c_client.i2c_func_tbl->i2c_write_table_w_microdelay(
+		&a_ctrl->i2c_client, &reg_setting);
+	if (rc < 0)
+		pr_err("msm_actuator_software_pwdn failed\n");
+
+	return rc;
+}
+#endif
+
 static int32_t msm_actuator_power_down(struct msm_actuator_ctrl_t *a_ctrl)
 {
 	int32_t rc = 0;
@@ -607,6 +646,10 @@ static int32_t msm_actuator_power_down(struct msm_actuator_ctrl_t *a_ctrl)
 				pr_err("%s:%d Lens park failed.\n",
 					__func__, __LINE__);
 		}
+
+#ifdef CONFIG_MACH_T86519A1
+		msm_actuator_software_pwdn(a_ctrl);
+#endif
 
 		rc = msm_actuator_vreg_control(a_ctrl, 0);
 		if (rc < 0) {

@@ -316,6 +316,9 @@ extern int msm8x16_wcd_hs_detect(struct snd_soc_codec *codec,
 
 extern void msm8x16_wcd_hs_detect_exit(struct snd_soc_codec *codec);
 
+#ifdef CONFIG_MACH_WT88047
+extern int msm8x16_wcd_restart_mbhc(struct snd_soc_codec *codec);
+#endif
 extern void msm8x16_wcd_spk_ext_pa_cb(
 		int (*codec_spk_ext_pa)(struct snd_soc_codec *codec,
 		int enable), struct snd_soc_codec *codec);

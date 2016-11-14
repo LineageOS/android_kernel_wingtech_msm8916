@@ -1,3 +1,7 @@
+#ifdef CONFIG_WT88047_CAMERA
+#include <media/msm_cam_sensor_wt88047.h>
+#else
+
 #ifndef __LINUX_MSM_CAM_SENSOR_H
 #define __LINUX_MSM_CAM_SENSOR_H
 
@@ -401,6 +405,9 @@ enum msm_sensor_cfg_type_t {
 	CFG_SET_AUTOFOCUS,
 	CFG_CANCEL_AUTOFOCUS,
 	CFG_SET_STREAM_TYPE,
+#ifdef CONFIG_MACH_YULONG
+	CFG_UPDATE_OTP,
+#endif
 };
 
 enum msm_actuator_cfg_type_t {
@@ -777,3 +784,5 @@ struct msm_flash_cfg_data_t32 {
 #endif
 
 #endif /* __LINUX_MSM_CAM_SENSOR_H */
+
+#endif /* CONFIG_WT88047_CAMERA */

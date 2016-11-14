@@ -40,8 +40,10 @@
 /*VDD 2.375V-3.46V VLOGIC 1.8V +-5%*/
 #define MPU6050_VDD_MIN_UV	2500000
 #define MPU6050_VDD_MAX_UV	3400000
+#ifndef CONFIG_MACH_WT88047
 #define MPU6050_VLOGIC_MIN_UV	1800000
 #define MPU6050_VLOGIC_MAX_UV	1800000
+#endif
 #define MPU6050_VI2C_MIN_UV	1750000
 #define MPU6050_VI2C_MAX_UV	1950000
 
@@ -185,7 +187,9 @@ struct mpu6050_sensor {
 	bool acc_use_cal;
 
 	/* power control */
+#ifndef CONFIG_MACH_WT88047
 	struct regulator *vlogic;
+#endif
 	struct regulator *vdd;
 	struct regulator *vi2c;
 	int enable_gpio;
@@ -365,6 +369,7 @@ static int mpu6050_power_ctl(struct mpu6050_sensor *sensor, bool on)
 			return rc;
 		}
 
+#ifndef CONFIG_MACH_WT88047
 		rc = regulator_enable(sensor->vlogic);
 		if (rc) {
 			dev_err(&sensor->client->dev,
@@ -372,6 +377,7 @@ static int mpu6050_power_ctl(struct mpu6050_sensor *sensor, bool on)
 			regulator_disable(sensor->vdd);
 			return rc;
 		}
+#endif
 
 		if (!IS_ERR_OR_NULL(sensor->vi2c)) {
 			rc = regulator_enable(sensor->vi2c);
@@ -379,7 +385,9 @@ static int mpu6050_power_ctl(struct mpu6050_sensor *sensor, bool on)
 				dev_err(&sensor->client->dev,
 					"Regulator vi2c enable failed rc=%d\n",
 					rc);
+#ifndef CONFIG_MACH_WT88047
 				regulator_disable(sensor->vlogic);
+#endif
 				regulator_disable(sensor->vdd);
 				return rc;
 			}
@@ -410,6 +418,7 @@ static int mpu6050_power_ctl(struct mpu6050_sensor *sensor, bool on)
 			return rc;
 		}
 
+#ifndef CONFIG_MACH_WT88047
 		rc = regulator_disable(sensor->vlogic);
 		if (rc) {
 			dev_err(&sensor->client->dev,
@@ -417,6 +426,7 @@ static int mpu6050_power_ctl(struct mpu6050_sensor *sensor, bool on)
 			rc = regulator_enable(sensor->vdd);
 			return rc;
 		}
+#endif
 
 		if (!IS_ERR_OR_NULL(sensor->vi2c)) {
 			rc = regulator_disable(sensor->vi2c);
@@ -461,6 +471,7 @@ static int mpu6050_power_init(struct mpu6050_sensor *sensor)
 		}
 	}
 
+#ifndef CONFIG_MACH_WT88047
 	sensor->vlogic = regulator_get(&sensor->client->dev, "vlogic");
 	if (IS_ERR(sensor->vlogic)) {
 		ret = PTR_ERR(sensor->vlogic);
@@ -479,6 +490,7 @@ static int mpu6050_power_init(struct mpu6050_sensor *sensor)
 			goto reg_vlogic_put;
 		}
 	}
+#endif
 
 	sensor->vi2c = regulator_get(&sensor->client->dev, "vi2c");
 	if (IS_ERR(sensor->vi2c)) {
@@ -501,6 +513,7 @@ static int mpu6050_power_init(struct mpu6050_sensor *sensor)
 
 reg_vi2c_put:
 	regulator_put(sensor->vi2c);
+#ifndef CONFIG_MACH_WT88047
 	if (regulator_count_voltages(sensor->vlogic) > 0)
 		regulator_set_voltage(sensor->vlogic, 0, MPU6050_VLOGIC_MAX_UV);
 reg_vlogic_put:
@@ -508,6 +521,7 @@ reg_vlogic_put:
 reg_vdd_set_vtg:
 	if (regulator_count_voltages(sensor->vdd) > 0)
 		regulator_set_voltage(sensor->vdd, 0, MPU6050_VDD_MAX_UV);
+#endif
 reg_vdd_put:
 	regulator_put(sensor->vdd);
 	return ret;
@@ -517,9 +531,11 @@ static int mpu6050_power_deinit(struct mpu6050_sensor *sensor)
 {
 	int ret = 0;
 
+#ifndef CONFIG_MACH_WT88047
 	if (regulator_count_voltages(sensor->vlogic) > 0)
 		regulator_set_voltage(sensor->vlogic, 0, MPU6050_VLOGIC_MAX_UV);
 	regulator_put(sensor->vlogic);
+#endif
 	if (regulator_count_voltages(sensor->vdd) > 0)
 		regulator_set_voltage(sensor->vdd, 0, MPU6050_VDD_MAX_UV);
 	regulator_put(sensor->vdd);
@@ -657,6 +673,7 @@ static void mpu6050_remap_gyro_data(struct axis_data *data, int place)
  */
 static void mpu6050_read_single_event(struct mpu6050_sensor *sensor)
 {
+	ktime_t timestamp;
 	u32 shift;
 
 	if (sensor->cfg.accel_enable) {
@@ -668,10 +685,17 @@ static void mpu6050_read_single_event(struct mpu6050_sensor *sensor)
 			(sensor->axis.y << shift));
 		input_report_abs(sensor->accel_dev, ABS_Z,
 			(sensor->axis.z << shift));
+		input_event(sensor->gyro_dev,
+				EV_SYN, SYN_TIME_SEC,
+				ktime_to_timespec(timestamp).tv_sec);
+		input_event(sensor->gyro_dev, EV_SYN,
+				SYN_TIME_NSEC,
+				ktime_to_timespec(timestamp).tv_nsec);
 		input_sync(sensor->accel_dev);
 	}
 
 	if (sensor->cfg.gyro_enable) {
+		timestamp = ktime_get_boottime();
 		mpu6050_read_gyro_data(sensor, &sensor->axis);
 		mpu6050_remap_gyro_data(&sensor->axis,
 			sensor->pdata->place);
@@ -683,6 +707,12 @@ static void mpu6050_read_single_event(struct mpu6050_sensor *sensor)
 			(sensor->axis.ry >> shift));
 		input_report_abs(sensor->gyro_dev, ABS_RZ,
 			(sensor->axis.rz >> shift));
+		input_event(sensor->gyro_dev,
+				EV_SYN, SYN_TIME_SEC,
+				ktime_to_timespec(timestamp).tv_sec);
+		input_event(sensor->gyro_dev, EV_SYN,
+				SYN_TIME_NSEC,
+				ktime_to_timespec(timestamp).tv_nsec);
 		input_sync(sensor->gyro_dev);
 	}
 	return;
