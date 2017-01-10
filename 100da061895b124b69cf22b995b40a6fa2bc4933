@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa3479d7_31ceb15b",
+        "filename": "sound/soc/msm/msm8x16.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 2135,
+      "author": {
+        "id": 16767
+      },
+      "writtenOn": "2017-01-10T20:56:54Z",
+      "side": 1,
+      "message": "Headset button didn\u0027t work properly \nThe volume up not working and volume down button works as the volume up\n\nMaybe revert this part could solve the problem?",
+      "revId": "100da061895b124b69cf22b995b40a6fa2bc4933",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
