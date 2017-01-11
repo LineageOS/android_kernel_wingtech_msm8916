@@ -149,14 +149,14 @@
 	vbus_otg-supply = <&smb1360_otg_supply>;
 };
 
-&pm8916_vib {
-	status = "okay";
-	qcom,vib-timeout-ms = <15000>;
-	qcom,vib-vtg-level-mV = <3000>;
-};
-
-&pm8916_rtc {
-	qcom,qpnp-rtc-alarm-pwrup = <1>;
+&spmi_bus {
+	qcom,pm8916@1 {
+		qcom,vibrator@c000 {
+			status = "okay";
+			qcom,vib-timeout-ms = <15000>;
+			qcom,vib-vtg-level-mV = <3000>;
+		};
+	};
 };
 
 &pm8916_l11 {
@@ -194,8 +194,4 @@
 		qcom,master-en = <1>;
 		status = "ok";
 	};
-};
-
-&apc_vreg_corner {
-	qcom,cpr-voltage-floor = <1050000 1050000 1162500>;
 };
