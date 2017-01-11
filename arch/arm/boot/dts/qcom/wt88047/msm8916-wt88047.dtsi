@@ -10,6 +10,8 @@
  * GNU General Public License for more details.
  */
 
+#include "msm8916-camera-sensor-wt88047.dtsi"
+#include "msm-pm8916-wt88047.dtsi"
 #include "dsi-panel-r69431-720p-video.dtsi"
 #include "dsi-panel-nt35521-720p-video.dtsi"
 #include "dsi-panel-nt35521s-720p-video.dtsi"
@@ -18,7 +20,6 @@
 #include "dsi-panel-r61308-720p-video.dtsi"
 #include "dsi-panel-otm1285a-otp-720p-video.dtsi"
 #include "dsi-panel-r61308-s88047a1-720p-video.dtsi"
-#include "msm8916-camera-sensor-wt88047.dtsi"
 
 / {
         memory {
@@ -28,10 +29,6 @@
                         linux,remove-completely;
                         reg = <0x0 0x8c400000 0x0 0x00100000>;
                         label = "pstore_reserve_mem";
-                };
-
-                splash_region@83000000 { /* Give this region to mdss_fb0 */
-                        /* status = "disabled"; */
                 };
         };
 };
@@ -139,19 +136,12 @@
 
 &mdss_mdp {
 	qcom,mdss-pref-prim-intf = "dsi";
-
-	mdss_fb0: qcom,mdss_fb_primary {
-		/* Ketut P. Kumajaya: For old bootloader, old splash image */
-		/* Both recovery and bootanimation framebuffer need this */
-		/* qcom,memblock-reserve = <0x83200000 0xfa0000>;
-		qcom,mdss-fb-splash-logo-enabled; */
-	};
 };
 
 &pmx_mdss {
 	qcom,num-grp-pins = <1>;
 	qcom,pins = <&gp 25>;
-	mdss_dsi_active: active {
+        mdss_dsi_active: active {
 		output-high;
 	};
 	mdss_dsi_suspend: suspend {
@@ -204,8 +194,6 @@
 };
 
 &dsi_r61308_720p_video {
-	/* Ketut P. Kumajaya: LCD garbled fix for HM2014817 */
-	/* qcom,esd-check-enabled; */
 	qcom,cont-splash-enabled;
 };
 
@@ -214,7 +202,6 @@
 };
 
 &dsi_r61308_s88047a1_720p_video {
-	/* qcom,esd-check-enabled; */
 	qcom,cont-splash-enabled;
 };
 
