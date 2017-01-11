@@ -149,25 +149,19 @@
 	vbus_otg-supply = <&smb1360_otg_supply>;
 };
 
-&pm8916_vib {
-	status = "okay";
-	qcom,vib-timeout-ms = <15000>;
-	qcom,vib-vtg-level-mV = <3000>;
-};
-
-&pm8916_rtc {
-	qcom,qpnp-rtc-alarm-pwrup = <1>;
+&spmi_bus {
+	qcom,pm8916@1 {
+		qcom,vibrator@c000 {
+			status = "okay";
+			qcom,vib-timeout-ms = <15000>;
+			qcom,vib-vtg-level-mV = <3000>;
+		};
+	};
 };
 
 &pm8916_l11 {
 	regulator-max-microvolt = <3300000>;
 	qcom,init-voltage = <3000000>;
-};
-
-&pm8916_l16 {
-	regulator-min-microvolt = <2600000>;
-	qcom,init-voltage = <2600000>;
-	regulator-always-on;
 };
 
 &pm8916_pon {
@@ -194,8 +188,4 @@
 		qcom,master-en = <1>;
 		status = "ok";
 	};
-};
-
-&apc_vreg_corner {
-	qcom,cpr-voltage-floor = <1050000 1050000 1162500>;
 };
