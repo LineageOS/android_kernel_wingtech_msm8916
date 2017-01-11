@@ -10,6 +10,8 @@
  * GNU General Public License for more details.
  */
 
+#include "msm8916-camera-sensor-wt88047.dtsi"
+#include "msm-pm8916-wt88047.dtsi"
 #include "dsi-panel-r69431-720p-video.dtsi"
 #include "dsi-panel-nt35521-720p-video.dtsi"
 #include "dsi-panel-nt35521s-720p-video.dtsi"
@@ -18,35 +20,30 @@
 #include "dsi-panel-r61308-720p-video.dtsi"
 #include "dsi-panel-otm1285a-otp-720p-video.dtsi"
 #include "dsi-panel-r61308-s88047a1-720p-video.dtsi"
-#include "msm8916-camera-sensor-wt88047.dtsi"
 
 / {
-        memory {
-                pstore_reserve_mem: pstore_reserve_region@0 {
-                        linux,reserve-contiguous-region;
-                        linux,reserve-region;
-                        linux,remove-completely;
-                        reg = <0x0 0x8c400000 0x0 0x00100000>;
-                        label = "pstore_reserve_mem";
-                };
-
-                splash_region@83000000 { /* Give this region to mdss_fb0 */
-                        /* status = "disabled"; */
-                };
-        };
+	memory {
+		pstore_reserve_mem: pstore_reserve_region@0 {
+			linux,reserve-contiguous-region;
+			linux,reserve-region;
+			linux,remove-completely;
+			reg = <0x0 0x8c400000 0x0 0x00100000>;
+			label = "pstore_reserve_mem";
+		};
+	};
 };
 
 &soc {
 	ramoops {
-                compatible = "ramoops";
-                status = "ok";
+		compatible = "ramoops";
+		status = "ok";
 
-                android,ramoops-buffer-start = <0x8c400000>;
-                android,ramoops-buffer-size = <0x100000>;
-                android,ramoops-console-size = <0x80000>;
-                android,ramoops-record-size = <0x20000>;
-                android,ramoops-dump-oops = <0x1>;
-        };
+		android,ramoops-buffer-start = <0x8c400000>;
+		android,ramoops-buffer-size = <0x100000>;
+		android,ramoops-console-size = <0x80000>;
+		android,ramoops-record-size = <0x20000>;
+		android,ramoops-dump-oops = <0x1>;
+	};
 
 	sound {
 		compatible = "qcom,msm8x16-audio-codec";
@@ -97,7 +94,7 @@
 				"msm-dai-q6-dev.16392", "msm-dai-q6-dev.16393",
 				"msm-dai-q6-dev.12288", "msm-dai-q6-dev.12289",
 				"msm-dai-q6-dev.12290", "msm-dai-q6-dev.12292",
-				"msm-dai-q6-dev.12293",	"msm-dai-q6-dev.224",
+				"msm-dai-q6-dev.12293", "msm-dai-q6-dev.224",
 				"msm-dai-q6-dev.225", "msm-dai-q6-dev.241",
 				"msm-dai-q6-dev.240", "msm-dai-q6-dev.32771",
 				"msm-dai-q6-dev.32772", "msm-dai-q6-dev.32773",
@@ -139,29 +136,14 @@
 
 &mdss_mdp {
 	qcom,mdss-pref-prim-intf = "dsi";
-
-	mdss_fb0: qcom,mdss_fb_primary {
-		/* Ketut P. Kumajaya: For old bootloader, old splash image */
-		/* Both recovery and bootanimation framebuffer need this */
-		/* qcom,memblock-reserve = <0x83200000 0xfa0000>;
-		qcom,mdss-fb-splash-logo-enabled; */
-	};
 };
 
 &pmx_mdss {
 	qcom,num-grp-pins = <1>;
 	qcom,pins = <&gp 25>;
-	mdss_dsi_active: active {
-		output-high;
-	};
-	mdss_dsi_suspend: suspend {
-		output-low;
-	};
 };
 
 &mdss_dsi0 {
-	qcom,platform-regulator-settings = [02 09 03 00 20 00 01];
-
 	qcom,dsi-pref-prim-pan = <&dsi_r69431_720p_video>;
 	qcom,dsi-pref-sub-pan = <&dsi_nt35521_720p_video>;
 	qcom,dsi-pref-sub1-pan = <&dsi_otm1285a_720p_video>;
@@ -204,8 +186,6 @@
 };
 
 &dsi_r61308_720p_video {
-	/* Ketut P. Kumajaya: LCD garbled fix for HM2014817 */
-	/* qcom,esd-check-enabled; */
 	qcom,cont-splash-enabled;
 };
 
@@ -214,7 +194,6 @@
 };
 
 &dsi_r61308_s88047a1_720p_video {
-	/* qcom,esd-check-enabled; */
 	qcom,cont-splash-enabled;
 };
 
@@ -246,6 +225,23 @@
 		akm_sleep: akm_sleep {
 			drive-strength = <2>;
 			bias-pull-down;
+		};
+	};
+
+	fan-otg-pin {
+		qcom,pins = <&gp 114>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "fan-otg-pin";
+		otg_pin_high: otg_pin_high {
+			drive-strength = <2>;
+			bias-pull-up;
+			output-high;
+		};
+		otg_pin_low: otg_pin_low {
+			drive-strength = <2>;
+			bias-pull-down;
+			output-low;
 		};
 	};
 
