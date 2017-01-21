@@ -305,10 +305,8 @@ out_micb_en:
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
 		}
 		/* configure cap settings properly when micbias is enabled */
-#ifndef CONFIG_MACH_WT88047
 		if (mbhc->mbhc_cb->set_cap_mode)
 			mbhc->mbhc_cb->set_cap_mode(codec, micbias1, true);
-#endif
 		break;
 	case WCD_EVENT_PRE_MICBIAS_2_OFF:
 		/*
@@ -345,11 +343,7 @@ out_micb_en:
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_PULLUP);
 		else
 			/* enable current source and disable mb, pullup*/
-#ifdef CONFIG_MACH_WT88047
-			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
-#else
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
-#endif
 
 		/* configure cap settings properly when micbias is disabled */
 		if (mbhc->mbhc_cb->set_cap_mode)
@@ -369,11 +363,7 @@ out_micb_en:
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
 		else
 			/* Disable micbias, pullup & enable cs */
-#ifdef CONFIG_MACH_WT88047
-			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
-#else
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
-#endif
 		mutex_unlock(&mbhc->hphl_pa_lock);
 		break;
 	case WCD_EVENT_PRE_HPHR_PA_OFF:
@@ -390,11 +380,7 @@ out_micb_en:
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
 		else
 			/* Disable micbias, pullup & enable cs */
-#ifdef CONFIG_MACH_WT88047
-			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
-#else
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
-#endif
 		mutex_unlock(&mbhc->hphr_pa_lock);
 		break;
 	case WCD_EVENT_PRE_HPHL_PA_ON:
@@ -964,19 +950,10 @@ static void wcd_enable_mbhc_supply(struct wcd_mbhc *mbhc,
 					wcd_enable_curr_micbias(mbhc,
 							WCD_MBHC_EN_PULLUP);
 			else
-#ifdef CONFIG_MACH_WT88047
-				wcd_enable_curr_micbias(mbhc,
-							WCD_MBHC_EN_MB);
-#else
 				wcd_enable_curr_micbias(mbhc,
 							WCD_MBHC_EN_CS);
-#endif
 		} else if (plug_type == MBHC_PLUG_TYPE_HEADPHONE) {
-#ifdef CONFIG_MACH_WT88047
-			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
-#else
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
-#endif
 		} else {
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_NONE);
 		}
@@ -1009,7 +986,7 @@ static void wcd_correct_swch_plug(struct work_struct *work)
 	codec = mbhc->codec;
 
 #ifdef CONFIG_MACH_WT88047
-	WCD_MBHC_REG_READ(MSM8X16_WCD_A_ANALOG_MBHC_DET_CTL_1,detection_type_read);
+	WCD_MBHC_REG_READ(MSM8X16_WCD_A_ANALOG_MBHC_DET_CTL_1, detection_type_read);
 	detection_type = detection_type_read & 0x20;
 	if (detection_type)
 		return;
