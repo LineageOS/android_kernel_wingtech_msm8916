@@ -195,3 +195,7 @@
 		status = "ok";
 	};
 };
+
+&apc_vreg_corner {
+	qcom,cpr-voltage-floor = <1050000 1050000 1162500>;
+};

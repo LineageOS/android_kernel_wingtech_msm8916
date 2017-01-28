@@ -141,9 +141,17 @@
 &pmx_mdss {
 	qcom,num-grp-pins = <1>;
 	qcom,pins = <&gp 25>;
+	mdss_dsi_active: active {
+		output-high;
+	};
+	mdss_dsi_suspend: suspend {
+		output-low;
+	};
 };
 
 &mdss_dsi0 {
+	qcom,platform-regulator-settings = [02 09 03 00 20 00 01];
+
 	qcom,dsi-pref-prim-pan = <&dsi_r69431_720p_video>;
 	qcom,dsi-pref-sub-pan = <&dsi_nt35521_720p_video>;
 	qcom,dsi-pref-sub1-pan = <&dsi_otm1285a_720p_video>;
