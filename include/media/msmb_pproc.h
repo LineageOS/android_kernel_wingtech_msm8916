@@ -1,7 +1,3 @@
-#ifdef CONFIG_WT88047_CAMERA
-#include <media/msmb_pproc_wt88047.h>
-#else
-
 #ifndef __MSMB_PPROC_H
 #define __MSMB_PPROC_H
 
@@ -431,5 +427,3 @@ struct msm_camera_v4l2_ioctl32_t {
 #endif
 
 #endif /* __MSMB_PPROC_H */
-
-#endif  /* CONFIG_WT88047_CAMERA */
