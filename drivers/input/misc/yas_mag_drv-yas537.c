@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014 Yamaha Corporation
+ * Copyright (C) 2016 XiaoMi, Inc.
  *
  * This software is provided 'as-is', without any express or implied
  * warranty.  In no event will the authors be held liable for any damages
@@ -10,16 +11,17 @@
  * freely, subject to the following restrictions:
  *
  * 1. The origin of this software must not be misrepresented; you must not
- *    claim that you wrote the original software. If you use this software
- *    in a product, an acknowledgment in the product documentation would be
- *    appreciated but is not required.
+ *	claim that you wrote the original software. If you use this software
+ *	in a product, an acknowledgment in the product documentation would be
+ *	appreciated but is not required.
  * 2. Altered source versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.
+ *	misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
 #include "yas.h"
 #include <linux/kernel.h>
+
 
 #if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
 
@@ -43,7 +45,7 @@
 
 #define YAS537_DATA_UNDERFLOW		(0)
 #define YAS537_DATA_OVERFLOW		(16383)
-#define YAS537_DEVICE_ID		(0x07) /* YAS537 (MS-3T) */
+#define YAS537_DEVICE_ID		(0x07)	/* YAS537 (MS-3T) */
 
 #define YAS_X_OVERFLOW			(0x01)
 #define YAS_X_UNDERFLOW			(0x02)
@@ -56,8 +58,8 @@
 
 #define YAS537_MAG_STATE_NORMAL		(0)
 #define YAS537_MAG_STATE_INIT_COIL	(1)
-#define YAS537_MAG_INITCOIL_TIMEOUT	(1000) /* msec */
-#define YAS537_MAG_POWER_ON_RESET_TIME	(4000) /* usec */
+#define YAS537_MAG_INITCOIL_TIMEOUT	(1000)	/* msec */
+#define YAS537_MAG_POWER_ON_RESET_TIME	(4000)	/* usec */
 #define YAS537_MAG_NOTRANS_POSITION	(2)
 
 #define YAS537_MAG_AVERAGE_8		(0)
@@ -101,19 +103,22 @@ struct yas_cdriver {
 	int noise_rcoil_flag;
 };
 
+
+
 static const struct yas_matrix no_conversion
-	= { {10000, 0, 0, 0, 10000, 0, 0, 0, 10000} };
+	= {{9673, 53, 196, 143, 10195, -268, -56, -41, 10142} };
+
 static const int measure_time_worst[] = {800, 1100, 1500, 3000, 6000, 12000};
 
 static const int8_t YAS537_TRANSFORMATION[][9] = {
-	{-1,  0,  0,  0, -1,  0,  0,  0,  1 },
-	{ 0, -1,  0,  1,  0,  0,  0,  0,  1 },
-	{ 1,  0,  0,  0,  1,  0,  0,  0,  1 },
-	{ 0,  1,  0, -1,  0,  0,  0,  0,  1 },
-	{ 1,  0,  0,  0, -1,  0,  0,  0, -1 },
-	{ 0,  1,  0,  1,  0,  0,  0,  0, -1 },
-	{-1,  0,  0,  0,  1,  0,  0,  0, -1 },
-	{ 0, -1,  0, -1,  0,  0,  0,  0, -1 },
+	{-1, 0, 0, 0, -1, 0, 0, 0, 1},
+	{0, -1, 0, 1, 0, 0, 0, 0, 1},
+	{1, 0, 0, 0, 1, 0, 0, 0, 1},
+	{0, 1, 0, -1, 0, 0, 0, 0, 1},
+	{1, 0, 0, 0, -1, 0, 0, 0, -1},
+	{0, 1, 0, 1, 0, 0, 0, 0, -1},
+	{-1, 0, 0, 0, 1, 0, 0, 0, -1},
+	{0, -1, 0, -1, 0, 0, 0, 0, -1},
 };
 static struct yas_cdriver driver;
 
@@ -630,7 +635,7 @@ static int yas_ext(int32_t cmd, void *p)
 			goto self_test_exit;
 		}
 		rt = YAS_NO_ERROR;
-		self_test_exit:
+self_test_exit:
 		if (enable)
 			cont_start_yas537();
 		else
