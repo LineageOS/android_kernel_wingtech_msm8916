@@ -2,6 +2,7 @@
  * Configuration header file of the core driver API @file yas_cfg.h
  *
  * Copyright (c) 2013-2014 Yamaha Corporation
+ * Copyright (C) 2016 XiaoMi, Inc.
  *
  * This software is provided 'as-is', without any express or implied
  * warranty.  In no event will the authors be held liable for any damages
@@ -12,11 +13,11 @@
  * freely, subject to the following restrictions:
  *
  * 1. The origin of this software must not be misrepresented; you must not
- *    claim that you wrote the original software. If you use this software
- *    in a product, an acknowledgment in the product documentation would be
- *    appreciated but is not required.
+ *	claim that you wrote the original software. If you use this software
+ *	in a product, an acknowledgment in the product documentation would be
+ *	appreciated but is not required.
  * 2. Altered source versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.
+ *	misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
  */
 #ifndef __YAS_CFG_H__
@@ -78,7 +79,7 @@
 #define YAS_GYRO_DRIVER_YAS53x			(0x7fff) /*!< YAS XXX */
 
 /*----------------------------------------------------------------------------
- *                               Configuration
+ *							   Configuration
  *----------------------------------------------------------------------------*/
 
 #define YAS_ACC_DRIVER				(YAS_ACC_DRIVER_BMI055)
@@ -153,13 +154,13 @@
 #define YAS532_DRIVER_NO_SLEEP			(0)
 
 /* ----------------------------------------------------------------------------
- *                            Driver Configuration
+ *							Driver Configuration
  *--------------------------------------------------------------------------- */
 /*! Default sensor delay in [msec] */
 #define YAS_DEFAULT_SENSOR_DELAY		(50)
 
 /* ----------------------------------------------------------------------------
- *                      Geomagnetic Filter Configuration
+ *					  Geomagnetic Filter Configuration
  *--------------------------------------------------------------------------- */
 
 /*! Geomagnetic adaptive filter noise threshold (dispersion in [nT]) */
@@ -170,7 +171,7 @@
 #define YAS_MAG_DEFAULT_FILTER_THRESH		(300)
 
 /* ----------------------------------------------------------------------------
- *                           Other Configuration
+ *						   Other Configuration
  *--------------------------------------------------------------------------- */
 
 #if YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE
@@ -192,7 +193,7 @@
 #endif
 
 #if YAS_MAG_DRIVER == YAS_MAG_DRIVER_NONE \
-		    || YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE
+			|| YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE
 #undef YAS_SOFTWARE_GYROSCOPE_ENABLE
 #define YAS_SOFTWARE_GYROSCOPE_ENABLE		(0)
 #undef YAS_FUSION_ENABLE
@@ -200,13 +201,13 @@
 #endif
 
 #if YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE \
-		    || YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE
+			|| YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE
 #undef YAS_GAMEVEC_ENABLE
 #define YAS_GAMEVEC_ENABLE			(0)
 #endif
 
 #if YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE \
-		     || YAS_MAG_DRIVER == YAS_MAG_DRIVER_NONE
+			 || YAS_MAG_DRIVER == YAS_MAG_DRIVER_NONE
 #undef YAS_GYRO_CALIB_ENABLE
 #define YAS_GYRO_CALIB_ENABLE			(0)
 #endif

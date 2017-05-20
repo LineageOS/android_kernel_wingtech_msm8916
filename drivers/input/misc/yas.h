@@ -2,6 +2,7 @@
  * Header file of the core driver API @file yas.h
  *
  * Copyright (c) 2013-2014 Yamaha Corporation
+ * Copyright (C) 2016 XiaoMi, Inc.
  *
  * This software is provided 'as-is', without any express or implied
  * warranty.  In no event will the authors be held liable for any damages
@@ -12,11 +13,11 @@
  * freely, subject to the following restrictions:
  *
  * 1. The origin of this software must not be misrepresented; you must not
- *    claim that you wrote the original software. If you use this software
- *    in a product, an acknowledgment in the product documentation would be
- *    appreciated but is not required.
+ *	claim that you wrote the original software. If you use this software
+ *	in a product, an acknowledgment in the product documentation would be
+ *	appreciated but is not required.
  * 2. Altered source versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.
+ *	misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
@@ -25,10 +26,10 @@
 
 #include "yas_cfg.h"
 
-#define YAS_VERSION	"10.2.4"/*!< MS-x Driver Version */
+#define YAS_VERSION	"10.2.4"	/*!< MS-x Driver Version */
 
 /* ----------------------------------------------------------------------------
- *                             Typedef definition
+ *							 Typedef definition
  *--------------------------------------------------------------------------- */
 
 #if defined(__KERNEL__)
@@ -44,16 +45,16 @@
 #endif
 
 /* ----------------------------------------------------------------------------
- *                              Macro definition
+ *							  Macro definition
  *--------------------------------------------------------------------------- */
 
 #define YAS_DEBUG			(0) /*!< Debug print (0:disabled,
-					      1:enabled) */
+						  1:enabled) */
 
 #define YAS_NO_ERROR			(0) /*!< Succeed */
 #define YAS_ERROR_ARG			(-1) /*!< Invalid argument */
 #define YAS_ERROR_INITIALIZE		(-2) /*!< Invalid initialization status
-					      */
+						  */
 #define YAS_ERROR_BUSY			(-3) /*!< Sensor is busy */
 #define YAS_ERROR_DEVICE_COMMUNICATION	(-4) /*!< Device communication error */
 #define YAS_ERROR_CHIP_ID		(-5) /*!< Invalid chip id */
@@ -126,19 +127,19 @@
 #define YAS_TYPE_M_MAG			(0x00000010) /*!< 3-axis Magnetometer */
 #define YAS_TYPE_G_GYRO			(0x00000020) /*!< 3-axis Gyroscope */
 #define YAS_TYPE_AM_ACC			(0x00100000) /*!< 6-axis (Acc+Mag)
-						       Acceleration */
+							   Acceleration */
 #define YAS_TYPE_AM_MAG			(0x00200000) /*!< 6-axis (Acc+Mag)
-						       Magnetometer */
+							   Magnetometer */
 #define YAS_TYPE_AG_ACC			(0x01000000) /*!< 6-axis (Acc+Gyro)
-						       Acceleration */
+							   Acceleration */
 #define YAS_TYPE_AG_GYRO		(0x02000000) /*!< 6-axis (Acc+Gyro)
-						       Gyroscope */
+							   Gyroscope */
 #define YAS_TYPE_AMG_ACC		(0x10000000) /*!< 9-axis (Acc+Gyro+Mag)
-						       Acceleration */
+							   Acceleration */
 #define YAS_TYPE_AMG_MAG		(0x20000000) /*!< 9-axis (Acc+Gyro+Mag)
-						       Magnetometer */
+							   Magnetometer */
 #define YAS_TYPE_AMG_GYRO		(0x40000000) /*!< 9-axis (Acc+Gyro+Mag)
-						       Gyroscope */
+							   Gyroscope */
 
 #if YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE
 #define YAS_TYPE_ACC YAS_TYPE_ACC_NONE
@@ -249,7 +250,7 @@
 #endif
 
 /* ----------------------------------------------------------------------------
- *                   Geomagnetic Calibration Configuration
+ *				   Geomagnetic Calibration Configuration
  *--------------------------------------------------------------------------- */
 
 /*! Geomagnetic calibration mode: spherical only */
@@ -264,7 +265,7 @@
 #define YAS_MAG_CALIB_MODE_WITH_GYRO		(4)
 
 /* ----------------------------------------------------------------------------
- *                      Extension Command Definition
+ *					  Extension Command Definition
  *--------------------------------------------------------------------------- */
 /*! YAS530 extension command: self test */
 #define YAS530_SELF_TEST		(0x00000001)
@@ -366,7 +367,7 @@
 #define YAS539_GET_HW_OFFSET		(0x00000006)
 
 /* ----------------------------------------------------------------------------
- *                            Structure definition
+ *							Structure definition
  *--------------------------------------------------------------------------- */
 
 /**
@@ -1002,29 +1003,29 @@ struct yas_mag_filter {
  */
 struct yas_mag_calib_config {
 	uint8_t mode; /*!< Calibration mode : #YAS_MAG_CALIB_MODE_SPHERE,
-		    #YAS_MAG_CALIB_MODE_ELLIPSOID,
-		    #YAS_MAG_CALIB_MODE_SPHERE_WITH_GYRO,
-		    #YAS_MAG_CALIB_MODE_ELLIPSOID_WITH_GYRO */
+			#YAS_MAG_CALIB_MODE_ELLIPSOID,
+			#YAS_MAG_CALIB_MODE_SPHERE_WITH_GYRO,
+			#YAS_MAG_CALIB_MODE_ELLIPSOID_WITH_GYRO */
 	uint16_t spread[3]; /*!< Spread threshold for accuracy 1-3
-			      (YAS_MAG_CALIB_MODE_SPHERE) */
+				  (YAS_MAG_CALIB_MODE_SPHERE) */
 	uint16_t variation[3]; /*!< Variation threshold for accuracy 1-3
 				 (YAS_MAG_CALIB_MODE_SPHERE) */
 #if YAS_MAG_CALIB_ELLIPSOID_ENABLE
 	uint16_t el_spread[3]; /*!< Spread threshold for accuracy 1-3
 				 (YAS_MAG_CALIB_MODE_ELLIPSOID) */
 	uint16_t el_variation[3]; /*!< Variation threshold for accuracy 1-3
-				    (YAS_MAG_CALIB_MODE_ELLIPSOID) */
+					(YAS_MAG_CALIB_MODE_ELLIPSOID) */
 #endif
 #if !YAS_MAG_CALIB_MINI_ENABLE
 	uint16_t trad_variation[3]; /*!< Traditional variation for accuracy 1-3
-				     */
+					 */
 #endif
 #if YAS_MAG_CALIB_WITH_GYRO_ENABLE
 	uint16_t cwg_threshold[12]; /*!< Threshold for calibration with gyro.
-				     Order is {eval_th_for_narrow,
-				      diff_angle_th_for_narrow,
-				      eval_th_for_wide, eval_th_for_wide }
-				      for accuracy 1, 2, and 3. */
+					 Order is {eval_th_for_narrow,
+					  diff_angle_th_for_narrow,
+					  eval_th_for_wide, eval_th_for_wide}
+					  for accuracy 1, 2, and 3. */
 #endif
 };
 
@@ -1152,7 +1153,7 @@ struct yas_mag_calib {
  */
 struct yas_gyro_calib_config {
 	uint16_t mag_noise; /*!< Magnetic sensor noise in standard deviation
-			     [nT] */
+				 [nT] */
 	uint16_t gyro_noise; /*!< Gyroscope sensor noise in [dps per root HZ] */
 };
 
@@ -1262,8 +1263,8 @@ struct yas_mag_avg_config {
  */
 struct yas_mag_avg_result {
 	int32_t tap_new; /*!< New average filter taps
-			    (0:32, 1:64, 2:128, 3:256) */
-	int32_t dm; /*!< Median standard deviation */
+				(0:32, 1:64, 2:128, 3:256) */
+	int32_t dm;	/*!< Median standard deviation */
 };
 
 /**
@@ -1843,7 +1844,7 @@ struct yas535_mag_self_test_result {
 #endif
 
 /* ----------------------------------------------------------------------------
- *                         Global function definition
+ *						 Global function definition
  *--------------------------------------------------------------------------- */
 
 #ifdef __cplusplus
@@ -1853,7 +1854,7 @@ extern "C" {
 /**
  * Initializes the acceleration sensor driver module.  Call thie function by
  * specifying a callback function.
- * @param[in,out] f Pointer to yas_acc_driver struct
+ * @param[in, out] f Pointer to yas_acc_driver struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1862,7 +1863,7 @@ int yas_acc_driver_init(struct yas_acc_driver *f);
 /**
  * Initializes the magnetic sensor driver module.  Call thie function by
  * specifying a callback function.
- * @param[in,out] f Pointer to yas_mag_driver struct
+ * @param[in, out] f Pointer to yas_mag_driver struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1871,7 +1872,7 @@ int yas_mag_driver_init(struct yas_mag_driver *f);
 /**
  * Initializes the gyroscope sensor driver module.  Call thie function by
  * specifying a callback function.
- * @param[in,out] f Pointer to yas_gyro_driver struct
+ * @param[in, out] f Pointer to yas_gyro_driver struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1880,7 +1881,7 @@ int yas_gyro_driver_init(struct yas_gyro_driver *f);
 /**
  * Initializes the acceleration and gyroscope sensor (6-axis) driver module.
  * Call thie function by specifying a callback function.
- * @param[in,out] f Pointer to yas_acc_gyro_driver struct
+ * @param[in, out] f Pointer to yas_acc_gyro_driver struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1889,7 +1890,7 @@ int yas_acc_gyro_driver_init(struct yas_acc_gyro_driver *f);
 /**
  * Initializes the acceleration and magnetic sensor (6-axis) driver module.
  * Call thie function by specifying a callback function.
- * @param[in,out] f Pointer to yas_acc_mag_driver struct
+ * @param[in, out] f Pointer to yas_acc_mag_driver struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1898,7 +1899,7 @@ int yas_acc_mag_driver_init(struct yas_acc_mag_driver *f);
 /**
  * Initializes the acceleration, magnetic and gyroscope sensor (9-axis) driver
  * module.  Call thie function by specifying a callback function.
- * @param[in,out] f Pointer to yas_acc_mag_gyro_driver struct
+ * @param[in, out] f Pointer to yas_acc_mag_gyro_driver struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1907,7 +1908,7 @@ int yas_acc_mag_gyro_driver_init(struct yas_acc_mag_gyro_driver *f);
 #if YAS_MAG_CALIB_ENABLE
 /**
  * Initializes the magnetic calibration module.
- * @param[in,out] f Pointer to yas_mag_calib struct
+ * @param[in, out] f Pointer to yas_mag_calib struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1917,7 +1918,7 @@ int yas_mag_calib_init(struct yas_mag_calib *f);
 #if YAS_GYRO_CALIB_ENABLE
 /**
  * Initializes the gyroscope calibration module.
- * @param[in,out] f Pointer to yas_gyro_calib struct
+ * @param[in, out] f Pointer to yas_gyro_calib struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1927,7 +1928,7 @@ int yas_gyro_calib_init(struct yas_gyro_calib *f);
 #if YAS_MAG_FILTER_ENABLE
 /**
  * Initializes the magnetic filter module.
- * @param[in,out] f Pointer to yas_mag_filter struct
+ * @param[in, out] f Pointer to yas_mag_filter struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1937,7 +1938,7 @@ int yas_mag_filter_init(struct yas_mag_filter *f);
 #if YAS_MAG_AVERAGE_FILTER_ENABLE
 /**
  * Initializes the magnetic average filter module.
- * @param[in,out] f Pointer to yas_mag_avg struct
+ * @param[in, out] f Pointer to yas_mag_avg struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1947,7 +1948,7 @@ int yas_mag_avg_init(struct yas_mag_avg *f);
 #if YAS_FUSION_ENABLE
 /**
  * Initializes the sensor fusion module.
- * @param[in,out] f Pointer to yas_fusion struct
+ * @param[in, out] f Pointer to yas_fusion struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1957,7 +1958,7 @@ int yas_fusion_init(struct yas_fusion *f);
 #if YAS_STEPCOUNTER_ENABLE
 /**
  * Initializes the stepcounter module.
- * @param[in,out] f Pointer to yas_stepcounter struct
+ * @param[in, out] f Pointer to yas_stepcounter struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1967,7 +1968,7 @@ int yas_stepcounter_init(struct yas_stepcounter *f);
 #if YAS_SIGNIFICANT_MOTION_ENABLE
 /**
  * Initializes the significant motion module.
- * @param[in,out] f Pointer to yas_sfm struct
+ * @param[in, out] f Pointer to yas_sfm struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1977,7 +1978,7 @@ int yas_sfm_init(struct yas_sfm *f);
 #if YAS_SOFTWARE_GYROSCOPE_ENABLE
 /**
  * Initializes the software gyroscope module
- * @param[in,out] f Pointer to yas_swgyro struct
+ * @param[in, out] f Pointer to yas_swgyro struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */
@@ -1987,7 +1988,7 @@ int yas_swgyro_init(struct yas_swgyro *f);
 #if YAS_ATTITUDE_FILTER_ENABLE
 /**
  * Initializes the filtered-attutde module.
- * @param[in,out] f Pointer to yas_attitude_filter struct
+ * @param[in, out] f Pointer to yas_attitude_filter struct
  * @retval #YAS_NO_ERROR Success
  * @retval Negative Number Error
  */

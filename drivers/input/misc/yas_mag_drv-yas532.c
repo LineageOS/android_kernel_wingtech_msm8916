@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2014 Yamaha Corporation
+ * Copyright (C) 2016 XiaoMi, Inc.
  *
  * This software is provided 'as-is', without any express or implied
  * warranty.  In no event will the authors be held liable for any damages
@@ -10,11 +11,11 @@
  * freely, subject to the following restrictions:
  *
  * 1. The origin of this software must not be misrepresented; you must not
- *    claim that you wrote the original software. If you use this software
- *    in a product, an acknowledgment in the product documentation would be
- *    appreciated but is not required.
+ *	claim that you wrote the original software. If you use this software
+ *	in a product, an acknowledgment in the product documentation would be
+ *	appreciated but is not required.
  * 2. Altered source versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.
+ *	misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
@@ -42,7 +43,7 @@
 #define YAS532_DATA_CENTER		(4096)
 #define YAS532_DATA_UNDERFLOW		(0)
 #define YAS532_DATA_OVERFLOW		(8190)
-#define YAS532_DEVICE_ID		(0x02) /* YAS532 (MS-3R/3F) */
+#define YAS532_DEVICE_ID		(0x02)	/* YAS532 (MS-3R/3F) */
 #define YAS532_TEMP20DEGREE_TYPICAL	(390)
 
 #define YAS_X_OVERFLOW			(0x01)
@@ -57,7 +58,7 @@
 #define YAS532_MAG_STATE_NORMAL		(0)
 #define YAS532_MAG_STATE_INIT_COIL	(1)
 #define YAS532_MAG_STATE_MEASURE_OFFSET	(2)
-#define YAS532_MAG_INITCOIL_TIMEOUT	(1000) /* msec */
+#define YAS532_MAG_INITCOIL_TIMEOUT	(1000)	/* msec */
 #define YAS532_MAG_TEMPERATURE_LOG	(10)
 #define YAS532_MAG_NOTRANS_POSITION	(3)
 #if YAS532_DRIVER_NO_SLEEP
@@ -113,16 +114,16 @@ static const int yas532_version_ac_coef[] = {YAS532_VERSION_AC_COEF_X,
 	YAS532_VERSION_AC_COEF_Y1, YAS532_VERSION_AC_COEF_Y2};
 static const int8_t INVALID_OFFSET[] = {0x7f, 0x7f, 0x7f};
 static const struct yas_matrix no_conversion
-	= { {10000, 0, 0, 0, 10000, 0, 0, 0, 10000} };
+	= {{10000, 0, 0, 0, 10000, 0, 0, 0, 10000} };
 static const int8_t YAS532_TRANSFORMATION[][9] = {
-	{ 0,  1,  0, -1,  0,  0,  0,  0,  1 },
-	{-1,  0,  0,  0, -1,  0,  0,  0,  1 },
-	{ 0, -1,  0,  1,  0,  0,  0,  0,  1 },
-	{ 1,  0,  0,  0,  1,  0,  0,  0,  1 },
-	{ 0, -1,  0, -1,  0,  0,  0,  0, -1 },
-	{ 1,  0,  0,  0, -1,  0,  0,  0, -1 },
-	{ 0,  1,  0,  1,  0,  0,  0,  0, -1 },
-	{-1,  0,  0,  0,  1,  0,  0,  0, -1 },
+	{0, 1, 0, -1, 0, 0, 0, 0, 1},
+	{-1, 0, 0, 0, -1, 0, 0, 0, 1},
+	{0, -1, 0, 1, 0, 0, 0, 0, 1},
+	{1, 0, 0, 0, 1, 0, 0, 0, 1},
+	{0, -1, 0, -1, 0, 0, 0, 0, -1},
+	{1, 0, 0, 0, -1, 0, 0, 0, -1},
+	{0, 1, 0, 1, 0, 0, 0, 0, -1},
+	{-1, 0, 0, 0, 1, 0, 0, 0, -1},
 };
 static struct yas_cdriver driver;
 
