@@ -34,8 +34,10 @@
 #include <linux/regulator/consumer.h>
 #include <linux/of_gpio.h>
 #include <linux/sensors.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
 #include "yas.h"
-/* #include <linux/hardware_info.h> */
 
 #if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS530
 #define YAS_MSM_NAME		"compass"
@@ -77,10 +79,17 @@
 #define YAS537_VIO_MIN_UV  1750000
 #define YAS537_VIO_MAX_UV  1950000
 
+#define CTS_TEST   (1)
+#if CTS_TEST
+#define MAG_NUM_SENSORS   1
+#define MAG_DATA_FLAG   0
+#endif
+
 struct yas537_platform_data {
 	int (*init)(void);
 	void (*exit)(void);
 	int (*power_on)(bool);
+	int position;
 };
 
 static struct i2c_client *this_client;
@@ -90,10 +99,16 @@ struct yas_state {
 	struct yas_mag_driver mag;
 	struct input_dev *input_dev;
 	struct sensors_classdev cdev;
+	#if CTS_TEST
+	struct workqueue_struct *data_wq;
+	#endif
 	struct delayed_work work;
 	int32_t poll_delay;
 	atomic_t enable;
 	int32_t compass_data[3];
+	#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct early_suspend sus;
+	#endif
 	struct device *dev;
 	struct class *class;
 	bool power_on;
@@ -101,6 +116,11 @@ struct yas_state {
 	struct regulator *vio;
 	struct yas537_platform_data *platform_data;
 	struct i2c_client *client;
+	#if CTS_TEST
+	struct hrtimer  poll_timer;
+	int64_t		 delay[MAG_NUM_SENSORS];
+	int use_hrtimer;
+	#endif
 };
 static struct yas_state *pdev_data;
 static struct sensors_classdev sensors_cdev = {
@@ -110,10 +130,9 @@ static struct sensors_classdev sensors_cdev = {
 	.handle = SENSORS_MAGNETIC_FIELD_HANDLE,
 	.type = SENSOR_TYPE_MAGNETIC_FIELD,
 	.max_range = "2000",
-	.resolution = "0.3",
+	.resolution = "1",
 	.sensor_power = "0.28",
 	.min_delay = 10000,
-	.max_delay = 10000,
 	.fifo_reserved_event_count = 0,
 	.fifo_max_event_count = 0,
 	.enabled = 0,
@@ -121,6 +140,20 @@ static struct sensors_classdev sensors_cdev = {
 	.sensors_enable = NULL,
 	.sensors_poll_delay = NULL,
 };
+
+#if CTS_TEST
+static enum hrtimer_restart yas_timer_func(struct hrtimer *timer)
+{
+	struct yas_state *st;
+
+	st = container_of(timer, struct yas_state, poll_timer);
+	queue_work(st->data_wq, &st->work.work);
+	hrtimer_forward_now(&st->poll_timer,
+			ns_to_ktime(st->delay[MAG_DATA_FLAG]));
+
+	return HRTIMER_RESTART;
+}
+#endif
 
 static int yas_device_open(int32_t type)
 {
@@ -189,7 +222,16 @@ static int yas_enable(struct yas_state *st)
 		mutex_lock(&st->lock);
 		st->mag.set_enable(1);
 		mutex_unlock(&st->lock);
+
+#if CTS_TEST
+	if (st->use_hrtimer) {
+		hrtimer_start(&st->poll_timer,
+		ns_to_ktime(0),
+		HRTIMER_MODE_REL);
+		} else {
 		schedule_delayed_work(&st->work, 0);
+		}
+#endif
 	}
 	return 0;
 }
@@ -200,7 +242,15 @@ static int yas_disable(struct yas_state *st)
 		pdata = st->platform_data;
 
 	if (atomic_cmpxchg(&st->enable, 1, 0)) {
+
+#if CTS_TEST
+	if (st->use_hrtimer) {
+		hrtimer_cancel(&st->poll_timer);
+		cancel_work_sync(&st->work.work);
+		} else {
 		cancel_delayed_work_sync(&st->work);
+	}
+#endif
 		mutex_lock(&st->lock);
 		st->mag.set_enable(0);
 		mutex_unlock(&st->lock);
@@ -382,7 +432,7 @@ static ssize_t yas_self_test_show(struct device *dev,
 #endif
 
 	if (ret != 0 || r.id != 7 || r.sx < 24 || r.sy < 31) {
-		printk("yas537 selftest  fail\n");
+		printk("yas537 selftest fail\n");
 		strcpy(result, "n");
 		return sprintf(buf, "%s\n", result);
 	} else {
@@ -522,8 +572,8 @@ static void yas_work_func(struct work_struct *work)
 	int ret, i;
 	ktime_t timestamp;
 
-	timestamp = ktime_get_boottime();
 	time_before = yas_current_time();
+	timestamp = ktime_get_boottime();
 	mutex_lock(&st->lock);
 	ret = st->mag.measure(mag, 1);
 	if (ret == 1) {
@@ -537,20 +587,42 @@ static void yas_work_func(struct work_struct *work)
 		input_report_abs(st->input_dev, ABS_X, mag[0].xyz.v[0]);
 		input_report_abs(st->input_dev, ABS_Y, mag[0].xyz.v[1]);
 		input_report_abs(st->input_dev, ABS_Z, mag[0].xyz.v[2]);
-		input_event(st->input_dev,
-			EV_SYN, SYN_TIME_SEC,
-			ktime_to_timespec(timestamp).tv_sec);
-		input_event(st->input_dev,
-			EV_SYN, SYN_TIME_NSEC,
-			ktime_to_timespec(timestamp).tv_nsec);
+		input_event(st->input_dev, EV_SYN, SYN_TIME_SEC, ktime_to_timespec(timestamp).tv_sec);
+		input_event(st->input_dev, EV_SYN, SYN_TIME_NSEC, ktime_to_timespec(timestamp).tv_nsec);
 		input_sync(st->input_dev);
 	}
+	#if CTS_TEST
 	time_after = yas_current_time();
 	poll_delay = poll_delay - (time_after - time_before);
 	if (poll_delay <= 0)
 		poll_delay = 1;
-	schedule_delayed_work(&st->work, msecs_to_jiffies(poll_delay));
+	st->delay[MAG_DATA_FLAG] = poll_delay * 1000000;
+
+	if (!st->use_hrtimer) {
+		schedule_delayed_work(&st->work, msecs_to_jiffies(poll_delay));
+	}
+	#endif
 }
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void yas_early_suspend(struct early_suspend *h)
+{
+	struct yas_state *st = container_of(h, struct yas_state, sus);
+	if (atomic_read(&st->enable)) {
+		cancel_delayed_work_sync(&st->work);
+		st->mag.set_enable(0);
+	}
+}
+
+static void yas_late_resume(struct early_suspend *h)
+{
+	struct yas_state *st = container_of(h, struct yas_state, sus);
+	if (atomic_read(&st->enable)) {
+		st->mag.set_enable(1);
+		schedule_delayed_work(&st->work, 0);
+	}
+}
+#endif
 
 static int yas_enable_set(struct sensors_classdev *sensors_cdev,
 		unsigned int enable)
@@ -572,6 +644,9 @@ static int yas_poll_delay_set(struct sensors_classdev *sensors_cdev,
 	mutex_lock(&st->lock);
 	if (st->mag.set_delay(delay_ms) == YAS_NO_ERROR)
 		st->poll_delay = delay_ms;
+	#if CTS_TEST
+	st->delay[MAG_DATA_FLAG] = delay_ms * 1000000;
+	#endif
 	mutex_unlock(&st->lock);
 	return 0;
 }
@@ -751,9 +826,21 @@ static void sensor_platform_hw_exit(void)
 static int sensor_parse_dt(struct device *dev,
 		struct yas537_platform_data *pdata)
 {
+	int rc = 0;
+	u32 temp_val = 0;
+	struct device_node *np = dev->of_node;
 	pdata->init = sensor_platform_hw_init;
 	pdata->exit = sensor_platform_hw_exit;
 	pdata->power_on = sensor_platform_hw_power_on;
+	rc = of_property_read_u32(np, "yas,position",
+							  &temp_val);
+	if (rc && (rc != -EINVAL)) {
+		dev_err(dev, "Unable to read fw delay read id\n");
+		return rc;
+		} else if (rc != -EINVAL) {
+		printk("yas,position=%d, \n", temp_val);
+		pdata->position =  temp_val;
+		}
 	return 0;
 }
 
@@ -880,8 +967,33 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	st->mag.callback.device_read = yas_device_read;
 	st->mag.callback.usleep = yas_usleep;
 	st->mag.callback.current_time = yas_current_time;
-	INIT_DELAYED_WORK(&st->work, yas_work_func);
+	#if CTS_TEST
+	st->use_hrtimer = 1;
+	st->data_wq = NULL;
+	st->delay[MAG_DATA_FLAG] = YAS_DEFAULT_SENSOR_DELAY * 1000000;
+	if (st->use_hrtimer) {
+		hrtimer_init(&st->poll_timer, CLOCK_MONOTONIC,
+				HRTIMER_MODE_REL);
+		st->poll_timer.function = yas_timer_func;
+		st->data_wq = alloc_workqueue("yas_poll_work",
+					WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1);
+		if (!st->data_wq) {
+			dev_err(&i2c->dev, "create workquque failed\n");
+			goto error_free;
+		}
+		INIT_WORK(&st->work.work, yas_work_func);
+		} else {
+		INIT_DELAYED_WORK(&st->work, yas_work_func);
+	}
+	#endif
+
 	mutex_init(&st->lock);
+	#ifdef CONFIG_HAS_EARLYSUSPEND
+	st->sus.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	st->sus.suspend = yas_early_suspend;
+	st->sus.resume = yas_late_resume;
+	register_early_suspend(&st->sus);
+	#endif
 	for (i = 0; i < 3; i++)
 		st->compass_data[i] = 0;
 
@@ -893,7 +1005,7 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	st->cdev.sensors_enable = yas_enable_set;
 	st->cdev.sensors_poll_delay = yas_poll_delay_set;
 
-	ret = sensors_classdev_register(&st->input_dev->dev, &st->cdev);
+	ret = sensors_classdev_register(&i2c->dev, &st->cdev);
 	if (ret) {
 		dev_err(&i2c->dev, "class device create failed: %d\n", ret);
 		goto error_classdev_unregister;
@@ -914,8 +1026,12 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		ret = -EFAULT;
 		goto error_remove_sysfs;
 	}
+  ret = st->mag.set_position(pdata->position);
+	if (ret < 0) {
+		ret = -EFAULT;
+		goto error_remove_sysfs;
+	}
 	dev_info(&i2c->dev, " yas537 successfully probed.");
-	/* hardwareinfo_set_prop(HARDWARE_MAGNETOMETER, "yas537"); */
 	return 0;
 
 error_remove_sysfs:
@@ -927,6 +1043,9 @@ error_classdev_unregister:
 error_free_device:
 	input_free_device(input_dev);
 error_free:
+	#ifdef CONFIG_HAS_EARLYSUSPEND
+	unregister_early_suspend(&st->sus);
+	#endif
 	kfree(st);
 error_ret:
 	i2c_set_clientdata(i2c, NULL);
@@ -938,6 +1057,9 @@ static int yas_remove(struct i2c_client *i2c)
 {
 	struct yas_state *st = i2c_get_clientdata(i2c);
 	if (st != NULL) {
+		#ifdef CONFIG_HAS_EARLYSUSPEND
+		unregister_early_suspend(&st->sus);
+		#endif
 		yas_disable(st);
 		st->mag.term();
 		sysfs_remove_group(&st->dev->kobj,
@@ -946,6 +1068,15 @@ static int yas_remove(struct i2c_client *i2c)
 		input_free_device(st->input_dev);
 		device_unregister(st->dev);
 		class_destroy(st->class);
+		#if CTS_TEST
+		if (st->use_hrtimer) {
+			hrtimer_cancel(&st->poll_timer);
+			cancel_work_sync(&st->work.work);
+		}
+		if (st->data_wq) {
+			destroy_workqueue(st->data_wq);
+		}
+		#endif
 		kfree(st);
 		this_client = NULL;
 	}
@@ -958,7 +1089,13 @@ static int yas_suspend(struct device *dev)
 	struct yas537_platform_data *pdata;
 	pdata = pdev_data->platform_data;
 	if (atomic_read(&pdev_data->enable)) {
-		cancel_delayed_work_sync(&pdev_data->work);
+	#if CTS_TEST
+		if (pdev_data->use_hrtimer) {
+			hrtimer_cancel(&pdev_data->poll_timer);
+			} else {
+			cancel_delayed_work_sync(&pdev_data->work);
+		}
+	#endif
 		pdev_data->mag.set_enable(0);
 	}
 
@@ -973,9 +1110,16 @@ static int yas_resume(struct device *dev)
 	pdata = pdev_data->platform_data;
 	if (atomic_read(&pdev_data->enable)) {
 		pdev_data->mag.set_enable(1);
+	#if CTS_TEST
+	if (pdev_data->use_hrtimer) {
+		hrtimer_start(&pdev_data->poll_timer,
+		ns_to_ktime(pdev_data->delay[MAG_DATA_FLAG]),
+		HRTIMER_MODE_REL);
+		} else {
 		schedule_delayed_work(&pdev_data->work, 0);
 	}
-
+	#endif
+	}
 	if (pdata->power_on)
 		pdata->power_on(true);
 	return 0;
