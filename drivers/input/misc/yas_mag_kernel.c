@@ -35,7 +35,6 @@
 #include <linux/of_gpio.h>
 #include <linux/sensors.h>
 #include "yas.h"
-/* #include <linux/hardware_info.h> */
 
 #if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS530
 #define YAS_MSM_NAME		"compass"
@@ -81,6 +80,7 @@ struct yas537_platform_data {
 	int (*init)(void);
 	void (*exit)(void);
 	int (*power_on)(bool);
+	int position;
 };
 
 static struct i2c_client *this_client;
@@ -110,7 +110,7 @@ static struct sensors_classdev sensors_cdev = {
 	.handle = SENSORS_MAGNETIC_FIELD_HANDLE,
 	.type = SENSOR_TYPE_MAGNETIC_FIELD,
 	.max_range = "2000",
-	.resolution = "0.3",
+	.resolution = "1",
 	.sensor_power = "0.28",
 	.min_delay = 10000,
 	.max_delay = 10000,
@@ -751,9 +751,22 @@ static void sensor_platform_hw_exit(void)
 static int sensor_parse_dt(struct device *dev,
 		struct yas537_platform_data *pdata)
 {
+	int rc = 0;
+	u32 temp_val = 0;
+	struct device_node *np = dev->of_node;
 	pdata->init = sensor_platform_hw_init;
 	pdata->exit = sensor_platform_hw_exit;
 	pdata->power_on = sensor_platform_hw_power_on;
+
+	rc = of_property_read_u32(np, "yas,position", &temp_val);
+	if (rc && (rc != -EINVAL)) {
+		dev_err(dev, "Unable to read fw delay read id\n");
+		return rc;
+	} else if (rc != -EINVAL) {
+		printk("yas,position=%d, \n", temp_val);
+		pdata->position = temp_val;
+	}
+
 	return 0;
 }
 
@@ -914,8 +927,12 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		ret = -EFAULT;
 		goto error_remove_sysfs;
 	}
+	ret = st->mag.set_position(pdata->position);
+	if (ret < 0) {
+		ret = -EFAULT;
+		goto error_remove_sysfs;
+	}
 	dev_info(&i2c->dev, " yas537 successfully probed.");
-	/* hardwareinfo_set_prop(HARDWARE_MAGNETOMETER, "yas537"); */
 	return 0;
 
 error_remove_sysfs:
