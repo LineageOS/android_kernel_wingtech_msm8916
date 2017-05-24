@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_6b823154",
+        "filename": "drivers/input/misc/yas_mag_kernel.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 15346
+      },
+      "writtenOn": "2017-05-24T08:50:15Z",
+      "side": 1,
+      "message": "basically CTS_TEST is useless?",
+      "range": {
+        "startLine": 79,
+        "startChar": 0,
+        "endLine": 79,
+        "endChar": 22
+      },
+      "revId": "0ca83c78f64d7a4e236955a4aa8fa17e903d9c1d",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
