@@ -1,0 +1,61 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da87b5cf_f10a9dd1",
+        "filename": "drivers/input/misc/yas_mag_kernel.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 113,
+      "author": {
+        "id": 11801
+      },
+      "writtenOn": "2017-06-12T13:28:22Z",
+      "side": 0,
+      "message": "Is this needed?",
+      "revId": "ed5d9f86f883bb9fec32f8e96dfa39f00d5e163c",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da87b5cf_910f91e1",
+        "filename": "drivers/input/misc/yas_mag_kernel.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 525,
+      "author": {
+        "id": 11801
+      },
+      "writtenOn": "2017-06-12T13:28:22Z",
+      "side": 0,
+      "message": "No-op",
+      "revId": "ed5d9f86f883bb9fec32f8e96dfa39f00d5e163c",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da87b5cf_51f909c7",
+        "filename": "drivers/input/misc/yas_mag_kernel.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 896,
+      "author": {
+        "id": 11801
+      },
+      "writtenOn": "2017-06-12T13:28:22Z",
+      "side": 0,
+      "message": "Is this actually needed?",
+      "range": {
+        "startLine": 896,
+        "startChar": 45,
+        "endLine": 896,
+        "endChar": 65
+      },
+      "revId": "ed5d9f86f883bb9fec32f8e96dfa39f00d5e163c",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
