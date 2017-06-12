@@ -135,10 +135,17 @@ static struct wcd_mbhc_config mbhc_cfg = {
 	.swap_gnd_mic = NULL,
 	.hs_ext_micbias = false,
 	.key_code[0] = KEY_MEDIA,
+#ifdef CONFIG_MACH_WT88047
+	.key_code[1] = KEY_VOLUMEUP,
+	.key_code[2] = KEY_VOLUMEDOWN,
+	.key_code[3] = KEY_VOICECOMMAND,
+	.key_code[4] = KEY_VOLUMEDOWN,
+#else
 	.key_code[1] = KEY_VOICECOMMAND,
 	.key_code[2] = KEY_VOLUMEUP,
 	.key_code[3] = KEY_VOLUMEDOWN,
 	.key_code[4] = 0,
+#endif
 	.key_code[5] = 0,
 	.key_code[6] = 0,
 	.key_code[7] = 0,
@@ -2024,6 +2031,8 @@ static void *def_msm8x16_wcd_mbhc_cal(void)
 #define S(X, Y) ((WCD_MBHC_CAL_PLUG_TYPE_PTR(msm8x16_wcd_cal)->X) = (Y))
 #ifdef CONFIG_MACH_CP8675
 	S(v_hs_max, 2550);
+#elif defined CONFIG_MACH_WT88047
+	S(v_hs_max, 1700);
 #else
 	S(v_hs_max, 1500);
 #endif
@@ -2072,16 +2081,16 @@ static void *def_msm8x16_wcd_mbhc_cal(void)
 	btn_low[4] = 137;
 	btn_high[4] = 137;
 #elif defined CONFIG_MACH_WT88047
-	btn_low[0] = 75;
+	btn_low[0] = 25;
 	btn_high[0] = 75;
-	btn_low[1] = 130;
-	btn_high[1] = 130;
-	btn_low[2] = 260;
-	btn_high[2] = 260;
-	btn_low[3] = 450;
-	btn_high[3] = 450;
-	btn_low[4] = 500;
-	btn_high[4] = 500;
+	btn_low[1] = 200;
+	btn_high[1] = 225;
+	btn_low[2] = 325;
+	btn_high[2] = 400;
+	btn_low[3] = 375;
+	btn_high[3] = 410;
+	btn_low[4] = 430;
+	btn_high[4] = 450;
 #else
 	btn_low[0] = 75;
 	btn_high[0] = 75;
