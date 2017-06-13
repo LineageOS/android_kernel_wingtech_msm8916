@@ -1359,13 +1359,8 @@ int ltr559_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	input_set_abs_params(data->input_dev_als, ABS_MISC, 0, 65535, 0, 0);
 	input_set_abs_params(data->input_dev_ps, ABS_DISTANCE, 0, 1, 0, 0);
 
-#ifdef CONFIG_MACH_WT88047
-	data->input_dev_als->name = "light";
-	data->input_dev_ps->name = "proximity";
-#else
 	data->input_dev_als->name = "ltr559-ls";
 	data->input_dev_ps->name = "ltr559-ps";
-#endif
 	data->input_dev_als->id.bustype = BUS_I2C;
 	data->input_dev_als->dev.parent =&data->client->dev;
 	data->input_dev_ps->id.bustype = BUS_I2C;
