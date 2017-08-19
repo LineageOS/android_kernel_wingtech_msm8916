@@ -453,15 +453,15 @@ static char const *rx_bit_format_text[] = {"S16_LE", "S24_LE"};
 static const char *const mi2s_tx_ch_text[] = {"One", "Two", "Three", "Four"};
 static char const *mi2s_rx_sample_rate_text[] = {"KHZ_48", "KHZ_96", "KHZ_192"};
 static const char *const loopback_mclk_text[] = {"DISABLE", "ENABLE"};
+#ifdef CONFIG_MACH_WT88047
+static const char *const lineout_text[] = {"DISABLE", "ENABLE", "DUALMODE"};
+#endif
 static char const *pri_rx_sample_rate_text[] = {"KHZ_48", "KHZ_96",
 					"KHZ_192", "KHZ_8",
 					"KHZ_16", "KHZ_32"};
 static char const *mi2s_tx_sample_rate_text[] = {"KHZ_48", "KHZ_96",
 					"KHZ_192", "KHZ_8",
 					"KHZ_16", "KHZ_32"};
-#ifdef CONFIG_MACH_WT88047
-static const char *const lineout_text[] = {"DISABLE", "ENABLE", "DUALMODE"};
-#endif
 #ifdef CONFIG_MACH_T86519A1
 static const char *const quatmi2s_clk_text[] = {"DISABLE", "ENABLE"};
 #endif
@@ -1455,14 +1455,14 @@ static const struct soc_enum msm_snd_enum[] = {
 	SOC_ENUM_SINGLE_EXT(2, rx_bit_format_text),
 	SOC_ENUM_SINGLE_EXT(4, mi2s_tx_ch_text),
 	SOC_ENUM_SINGLE_EXT(2, loopback_mclk_text),
+#ifdef CONFIG_MACH_WT88047
+	SOC_ENUM_SINGLE_EXT(3, lineout_text),
+#endif
 	SOC_ENUM_SINGLE_EXT(6, pri_rx_sample_rate_text),
 	SOC_ENUM_SINGLE_EXT(6, mi2s_tx_sample_rate_text),
 	SOC_ENUM_SINGLE_EXT(2, mi2s_rx_sample_rate_text),
 #ifdef CONFIG_MACH_T86519A1
 	SOC_ENUM_SINGLE_EXT(2, quatmi2s_clk_text),
-#endif
-#ifdef CONFIG_MACH_WT88047
-	SOC_ENUM_SINGLE_EXT(3, lineout_text),
 #endif
 };
 
@@ -1483,16 +1483,16 @@ static const struct snd_kcontrol_new msm_snd_controls[] = {
 			loopback_mclk_get, loopback_mclk_put),
 	SOC_ENUM_EXT("Internal BTSCO SampleRate", msm_btsco_enum[0],
 		     msm_btsco_rate_get, msm_btsco_rate_put),
+#ifdef CONFIG_MACH_WT88047
+	SOC_ENUM_EXT("Lineout_1 amp", msm_snd_enum[3],
+			lineout_status_get, lineout_status_put),
+#endif
 	SOC_ENUM_EXT("RX SampleRate", msm_snd_enum[3],
 			pri_rx_sample_rate_get, pri_rx_sample_rate_put),
 	SOC_ENUM_EXT("MI2S TX SampleRate", msm_snd_enum[4],
 			mi2s_tx_sample_rate_get, mi2s_tx_sample_rate_put),
 	SOC_ENUM_EXT("MI2S_RX SampleRate", msm_snd_enum[3],
 			mi2s_rx_sample_rate_get, mi2s_rx_sample_rate_put),
-#ifdef CONFIG_MACH_WT88047
-	SOC_ENUM_EXT("Lineout_1 amp", msm_snd_enum[6],
-			lineout_status_get, lineout_status_put),
-#endif
 };
 
 static int msm8x16_mclk_event(struct snd_soc_dapm_widget *w,
@@ -3732,7 +3732,11 @@ static int msm8x16_asoc_machine_probe(struct platform_device *pdev)
 	if (!pdata) {
 		dev_err(&pdev->dev, "Can't allocate msm8x16_asoc_mach_data\n");
 		ret = -ENOMEM;
+#ifdef CONFIG_MACH_WT88047
+		goto err;
+#else
 		goto err1;
+#endif
 	}
 
 	pdata->vaddr_gpio_mux_spkr_ctl =
@@ -3965,7 +3969,9 @@ err:
 	if (pdata->vaddr_gpio_mux_pcm_ctl)
 		iounmap(pdata->vaddr_gpio_mux_pcm_ctl);
 	devm_kfree(&pdev->dev, pdata);
+#ifndef CONFIG_MACH_WT88047
 err1:
+#endif
 	return ret;
 }
 
