@@ -795,6 +795,7 @@ static const struct attribute_group ltr559_attr_group = {
 
 static int ltr559_als_set_poll_delay(struct ltr559_data *data,unsigned int delay)
 {
+	cancel_delayed_work_sync(&data->als_work);
 	mutex_lock(&data->op_lock);
 
 	delay = clamp((int)delay,1,1000);
@@ -803,11 +804,12 @@ static int ltr559_als_set_poll_delay(struct ltr559_data *data,unsigned int delay
 			data->platform_data->als_poll_interval = delay;
 	}
 
-	if(!data->als_open_state)
+	if(!data->als_open_state) {
+	        mutex_unlock(&data->op_lock);
 		return -ESRCH;
+	}
 
 	pr_info("%s poll_interval=%d\n",__func__,data->platform_data->als_poll_interval);
-	cancel_delayed_work_sync(&data->als_work);
 	schedule_delayed_work(&data->als_work,msecs_to_jiffies(data->platform_data->als_poll_interval));
 	mutex_unlock(&data->op_lock);
 	return 0;
