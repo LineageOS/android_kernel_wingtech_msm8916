@@ -56,6 +56,8 @@
 		qcom,msm-mbhc-gnd-swh = <0>;
 		qcom,msm-hs-micbias-type = "internal";
 		qcom,msm-micbias1-ext-cap;
+		qcom,msm-spk-ext-pa = <&msm_gpio 117 0>;
+		qcom,msm-hs-ext-pa = <&msm_gpio 8 0>;
 		qcom,audio-routing =
 			"RX_BIAS", "MCLK",
 			"SPK_RX_BIAS", "MCLK",
@@ -68,8 +70,8 @@
 			"AMIC3", "MIC BIAS External";
 		pinctrl-names = "cdc_lines_act",
 				"cdc_lines_sus";
-		pinctrl-0 = <&cdc_pdm_lines_act>;
-		pinctrl-1 = <&cdc_pdm_lines_sus>;
+		pinctrl-0 = <&cdc_pdm_lines_act &cdc_ext_wt88047_pa_act>;
+		pinctrl-1 = <&cdc_pdm_lines_sus &cdc_ext_wt88047_pa_sus>;
 		asoc-platform = <&pcm0>, <&pcm1>, <&voip>, <&voice>,
 				<&loopback>, <&compress>, <&hostless>,
 				<&afe>, <&lsm>, <&routing>, <&lpa>;
@@ -257,6 +259,22 @@
 	gpio_led_pins {
 		qcom,pins = <&gp 16>, <&gp 17>;
 		qcom,num-grp-pins = <2>;
+	};
+
+	cdc-ext-wt88047-pa {
+		qcom,pins = <&gp 8>, <&gp 117>;
+		qcom,num-grp-pins = <2>;
+		qcom,pin-func = <0>;
+		label = "cdc-ext-wt88047-pa";
+		cdc_ext_wt88047_pa_act: ext_wt88047_pa_on {
+			drive-strength = <8>;
+			output-low;
+			bias-pull-none;
+		};
+		cdc_ext_wt88047_pa_sus: ext_wt88047_pa_off {
+			drive-strength = <2>;
+			bias-disable;
+		};
 	};
 };
 
