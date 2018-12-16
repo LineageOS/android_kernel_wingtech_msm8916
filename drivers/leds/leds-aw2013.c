@@ -442,6 +442,7 @@ static struct attribute_group aw2013_led_attr_group = {
 	.attrs = aw2013_led_attributes
 };
 
+#ifndef CONFIG_MACH_WT88047
 static int aw_2013_check_chipid(struct aw2013_led *led)
 {
 	u8 val;
@@ -454,6 +455,7 @@ static int aw_2013_check_chipid(struct aw2013_led *led)
 	else
 		return -EINVAL;
 }
+#endif
 
 static int aw2013_led_err_handle(struct aw2013_led *led_array,
 				int parsed_leds)
@@ -637,11 +639,13 @@ static int aw2013_led_probe(struct i2c_client *client,
 
 	mutex_init(&led_array->lock);
 
+#ifndef CONFIG_MACH_WT88047
 	ret = aw_2013_check_chipid(led_array);
 	if (ret) {
 		dev_err(&client->dev, "Check chip id error\n");
 		goto free_led_arry;
 	}
+#endif
 
 	ret = aw2013_led_parse_child_node(led_array, node);
 	if (ret) {
