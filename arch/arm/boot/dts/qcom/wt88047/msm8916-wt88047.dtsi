@@ -56,6 +56,8 @@
 		qcom,msm-mbhc-gnd-swh = <0>;
 		qcom,msm-hs-micbias-type = "internal";
 		qcom,msm-micbias1-ext-cap;
+		qcom,msm-spk-ext-pa = <&msm_gpio 117 0>;
+		qcom,msm-hs-ext-pa = <&msm_gpio 8 0>;
 		qcom,audio-routing =
 			"RX_BIAS", "MCLK",
 			"SPK_RX_BIAS", "MCLK",
@@ -68,8 +70,8 @@
 			"AMIC3", "MIC BIAS External";
 		pinctrl-names = "cdc_lines_act",
 				"cdc_lines_sus";
-		pinctrl-0 = <&cdc_pdm_lines_act>;
-		pinctrl-1 = <&cdc_pdm_lines_sus>;
+		pinctrl-0 = <&cdc_pdm_lines_act &cdc_ext_spk_pa_act &cdc_ext_hs_pa_act>;
+		pinctrl-1 = <&cdc_pdm_lines_sus &cdc_ext_spk_pa_sus &cdc_ext_hs_pa_sus>;
 		asoc-platform = <&pcm0>, <&pcm1>, <&voip>, <&voice>,
 				<&loopback>, <&compress>, <&hostless>,
 				<&afe>, <&lsm>, <&routing>, <&lpa>;
@@ -256,6 +258,49 @@
 
 	gpio_led_pins {
 		qcom,pins = <&gp 16>, <&gp 17>;
+		qcom,num-grp-pins = <2>;
+	};
+
+	cdc-ext-spk-pa {
+		qcom,pins = <&gp 117>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "cdc-ext-spk-pa";
+		cdc_ext_spk_pa_act: ext_spk_pa_on {
+			drive-strength = <8>;
+			output-low;
+			bias-pull-none;
+		};
+		cdc_ext_spk_pa_sus: ext_spk_pa_off {
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	cdc-ext-hs-pa {
+		qcom,pins = <&gp 8>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "cdc-ext-hs-pa";
+		cdc_ext_hs_pa_act: ext_hs_pa_on {
+			drive-strength = <8>;
+			output-low;
+			bias-pull-none;
+		};
+		cdc_ext_hs_pa_sus: ext_hs_pa_off {
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	/* kumajaya: Don't let spi0 claim gpio 902+8 */
+	spi0_active {
+		qcom,pins = <&gp 9>, <&gp 11>;
+		qcom,num-grp-pins = <2>;
+	};
+
+	spi0_suspend {
+		qcom,pins = <&gp 9>, <&gp 11>;
 		qcom,num-grp-pins = <2>;
 	};
 };
