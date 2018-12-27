@@ -3952,9 +3952,9 @@ static int smb1360_parse_jeita_params(struct smb1360_chip *chip)
 	return rc;
 }
 
+#ifdef CONFIG_BQ2022A_SUPPORT
 extern int power_supply_set_charging_enabled(struct power_supply *psy,
 													bool enabled);
-#ifdef CONFIG_BQ2022A_SUPPORT
 extern int bq2022a_get_bat_module_id(void);
 
 void smb1360_get_bat_character(struct smb1360_chip *chip)
@@ -4336,6 +4336,10 @@ static int smb1360_probe(struct i2c_client *client,
 		return rc;
 	}
 
+#ifdef CONFIG_BQ2022A_SUPPORT
+	smb1360_get_bat_character(chip);
+#endif
+
 	rc = smb1360_hw_init(chip);
 	if (rc < 0) {
 		dev_err(&client->dev,
@@ -4366,10 +4370,6 @@ static int smb1360_probe(struct i2c_client *client,
 			"Unable to register batt_psy rc = %d\n", rc);
 		goto fail_hw_init;
 	}
-
-#ifdef CONFIG_BQ2022A_SUPPORT
-	smb1360_get_bat_character(chip);
-#endif
 
 	/* STAT irq configuration */
 	if (client->irq) {
