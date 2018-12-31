@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "afb8bc72_0449f916",
+        "filename": "lib/lz4/lz4defs.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 11883
+      },
+      "writtenOn": "2018-12-31T22:16:49Z",
+      "side": 1,
+      "message": "not sure if you\u0027re 64bit,  but this ifdef doesn\u0027t include arm64, you can probably pick the Korg fix simply by checking our other kernel trees ( xiaomi 8996 has it )",
+      "revId": "9ac6a90a74a52af6cb8f24167249278c44d58d0a",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": true
+    }
+  ]
+}
