@@ -4141,31 +4141,6 @@ int msm8x16_wcd_codec_get_headset_state(void)
 	pr_debug("%s accdet_state = %d\n", __func__, accdet_state);
 	return accdet_state;
 }
-
-static void enable_ldo17(int enable)
-{
-	static struct regulator *reg_l17;
-	static int status;
-	int rc = 0;
-
-	if (!!status == !!enable)
-		return;
-
-	if (enable)
-		reg_l17 = regulator_get(0, "8916_l17");
-	if (reg_l17 != 0) {
-		if (enable) {
-			regulator_set_optimum_mode(reg_l17, 100*1000);
-			regulator_set_voltage(reg_l17, 2850000, 2850000);
-			rc = regulator_enable(reg_l17);
-		} else {
-			rc = regulator_disable(reg_l17);
-			regulator_put(reg_l17);
-			reg_l17 = 0;
-		}
-		status = enable;
-	}
-}
 #endif
 
 static int msm8x16_wcd_hph_pa_event(struct snd_soc_dapm_widget *w,
@@ -4193,7 +4168,6 @@ static int msm8x16_wcd_hph_pa_event(struct snd_soc_dapm_widget *w,
 
 	case SND_SOC_DAPM_POST_PMU:
 #ifdef CONFIG_MACH_WT88047
-		enable_ldo17(1);
 		state = msm8x16_wcd_codec_get_headset_state();
 #endif
 		usleep_range(7000, 7100);
@@ -4270,9 +4244,6 @@ static int msm8x16_wcd_hph_pa_event(struct snd_soc_dapm_widget *w,
 			"%s: sleep 10 ms after %s PA disable.\n", __func__,
 			w->name);
 		usleep_range(10000, 10100);
-#ifdef CONFIG_MACH_WT88047
-		enable_ldo17(0);
-#endif
 		break;
 	}
 	return 0;

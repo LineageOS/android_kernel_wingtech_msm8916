@@ -260,6 +260,11 @@
 	};
 };
 
+/* kumajaya: Completely disable spi0 and freeing gpio 902+8 */
+&spi_0 { /* BLSP1 QUP3 */
+	status = "disabled";
+};
+
 &i2c_0 { /* BLSP1 QUP2 */
 	liteon@23 {
 		compatible = "ltr,ltr559";
