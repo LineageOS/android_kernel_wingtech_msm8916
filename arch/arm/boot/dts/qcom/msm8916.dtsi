@@ -41,6 +41,14 @@
                                          fsmgr_flags = "wait";
                                          status = "ok";
                                  };
+				 vendor {
+					 compatible = "android,vendor";
+					 dev = "/dev/block/platform/soc.0/7824900.sdhci/by-name/oem";
+					 type = "squashfs";
+					 mnt_flags = "ro,barrier=1,discard";
+					 fsmgr_flags = "wait";
+					 status = "ok";
+				};
                          };
                  };
         };
